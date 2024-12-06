@@ -55,6 +55,7 @@ class LoginView(APIView):
         # 获取用户名和密码
         username = request.data.get("username")
         password = request.data.get("password")
+        print(username, password)
 
         # 使用Django的认证功能验证用户身份
         user = authenticate(request, username=username, password=password)

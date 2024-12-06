@@ -19,7 +19,6 @@
 ```json
 {
   "username": "string",  // 用户名
-  "email": "string",     // 邮箱地址
   "password": "string"   // 密码
 }
 ```
