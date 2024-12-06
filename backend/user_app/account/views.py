@@ -1,11 +1,9 @@
 from django.core.exceptions import ObjectDoesNotExist
-from django.utils.functional import SimpleLazyObject
-from django.views.decorators.csrf import csrf_exempt
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
-from django.contrib.auth import authenticate, login
+from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.models import User as AuthUser
 from .models import User, Passenger, UserPassengerRelation, Invoice
 from .serializers import UserSerializer, PassengerSerializer, InvoiceSerializer
@@ -52,7 +50,6 @@ class LoginView(APIView):
     用户登录接口。用户通过POST请求提交用户名和密码，进行身份验证。
     登录成功后会创建会话并返回成功信息；如果登录失败，返回错误信息。
     """
-
 
     def post(self, request):
         # 获取用户名和密码
@@ -113,6 +110,28 @@ class PassengerView(APIView):
     permission_classes = [IsAuthenticated]  # 只有认证通过的用户才能访问此接口
 
     @staticmethod
+    def get(request):
+        # 获取当前登录的用户
+        user = request.user
+
+        # 显式获取 user 实例，避免 SimpleLazyObject 问题
+        try:
+            user = User.objects.get(id=user.id)
+        except ObjectDoesNotExist:
+            return Response({"detail": "用户未找到"}, status=status.HTTP_404_NOT_FOUND)
+
+        try:
+            # 获取当前用户所有的乘机人
+            user_passengers = UserPassengerRelation.objects.filter(user=user)
+            passengers = [relation.passenger for relation in user_passengers]
+            # 序列化乘机人数据
+            serializer = PassengerSerializer(passengers, many=True)
+            return Response(serializer.data)
+        except Exception as e:
+            # 捕获异常并返回错误
+            return Response({"detail": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    @staticmethod
     def post(request):
         # 获取当前登录的用户
         user = request.user
@@ -167,7 +186,8 @@ class PassengerView(APIView):
             relation = UserPassengerRelation.objects.get(user=user, passenger__id=pk)
             passenger = relation.passenger
         except UserPassengerRelation.DoesNotExist:
-            return Response({"error": "Passenger not found or not associated with the user."}, status=status.HTTP_404_NOT_FOUND)
+            return Response({"error": "Passenger not found or not associated with the user."},
+                            status=status.HTTP_404_NOT_FOUND)
 
         # 使用序列化器更新乘机人数据
         serializer = PassengerSerializer(passenger, data=request.data, partial=True)
@@ -196,9 +216,11 @@ class PassengerView(APIView):
             passenger = relation.passenger
             passenger.delete()
             relation.delete()  # 删除关联关系
-            return Response(status=status.HTTP_204_NO_CONTENT)
+            return Response({"message": "Passenger deleted successfully"}, status=status.HTTP_204_NO_CONTENT)
         except UserPassengerRelation.DoesNotExist:
-            return Response({"error": "Passenger not found or not associated with the user."}, status=status.HTTP_404_NOT_FOUND)
+            return Response({"error": "Passenger not found or not associated with the user."},
+                            status=status.HTTP_404_NOT_FOUND)
+
 
 # 发票信息管理视图：用户可以通过此接口管理常用的发票信息
 class InvoiceView(APIView):
@@ -206,6 +228,24 @@ class InvoiceView(APIView):
     发票管理接口。用户可以通过POST请求添加发票信息，PUT请求更新发票信息，DELETE请求删除发票信息。
     """
     permission_classes = [IsAuthenticated]  # 只有认证通过的用户才能访问此接口
+
+    @staticmethod
+    def get(request):
+        # 获取当前登录的用户
+        user = request.user
+        # 显式获取 user 实例，避免 SimpleLazyObject 问题
+        try:
+            user = User.objects.get(id=user.id)
+        except ObjectDoesNotExist:
+            return Response({"detail": "用户未找到"}, status=status.HTTP_404_NOT_FOUND)
+        try:
+            # 获取当前用户的所有发票信息
+            invoices = Invoice.objects.filter(user=user)
+            serializer = InvoiceSerializer(invoices, many=True)
+            return Response(serializer.data)
+        except Exception as e:
+            # 捕获异常并返回错误
+            return Response({"detail": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     @staticmethod
     def post(request):
@@ -256,7 +296,7 @@ class InvoiceView(APIView):
         # 获取并删除指定ID的发票信息
         invoice = Invoice.objects.get(id=pk, user=user)
         invoice.delete()
-        return Response(status=status.HTTP_204_NO_CONTENT)
+        return Response({"message": "Invoice deleted successfully"}, status=status.HTTP_204_NO_CONTENT)
 
 
 # 资质认证视图：用户可以提交资质认证请求
@@ -272,3 +312,17 @@ def qualification_certification(request):
 
     # 在此可以处理资质认证逻辑，例如保存认证信息等
     return Response({"message": "Certification successful"}, status=status.HTTP_200_OK)
+
+
+# 退出登录视图：用户可以退出登录
+@api_view(['POST'])
+def logout_view(request):
+    """
+    处理用户退出登录。
+    """
+    try:
+        logout(request)
+        return Response({"detail": "Successfully logged out."}, status=status.HTTP_200_OK)
+    except Exception as e:
+        return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
