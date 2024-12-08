@@ -19,7 +19,6 @@
 ```json
 {
   "username": "string",  // 用户名
-  "email": "string",     // 邮箱地址
   "password": "string"   // 密码
 }
 ```
@@ -29,7 +28,8 @@
 - 成功：
 ```json
 {
-  "message": "Login successful"
+  "message": "Login successful",
+  "token": "string"  // 用户登录凭证
 }
 ```
 
@@ -108,7 +108,6 @@
   "accumulated_miles": "integer",  // 累计里程
   "ticket_count": "integer"   // 购票次数
 }
-
 ```
 - PUT 请求：
 
@@ -386,7 +385,38 @@
 }
 ```
 
-### 7. 退出登录接口
+### 7. 密码修改接口
+
+#### 接口地址：/user_app/account/change-password/
+
+#### 请求功能：用户修改密码。
+
+#### 请求方式：PUT
+
+#### 请求参数：
+```json
+{
+  "old_password": "string",  // 旧密码
+  "new_password": "string"   // 新密码
+}
+```
+
+#### 返回参数：
+
+- 成功：
+```json
+{
+  "message": "Password changed successfully"
+}
+```
+- 失败：
+```json
+{
+  "error": "Invalid old password"
+}
+```
+
+### 8. 退出登录接口
 
 #### 接口地址：/user_app/account/logout/
 

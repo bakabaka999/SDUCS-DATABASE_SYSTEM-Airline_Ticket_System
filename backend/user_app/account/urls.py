@@ -1,7 +1,7 @@
 # app_name/urls.py
 from django.urls import path
 from .views import RegisterView, LoginView, UserProfileView, PassengerView, InvoiceView, qualification_certification, \
-    logout_view
+    logout_view, change_password
 
 urlpatterns = [
     # 用户注册接口
@@ -23,6 +23,9 @@ urlpatterns = [
 
     # 资质认证接口
     path('qualification/', qualification_certification, name='qualification_certification'),
+
+    # 密码修改接口
+    path('change-password/', change_password, name='change_password'),
 
     # 退出登录接口
     path('logout/', logout_view, name='logout'),
