@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../models/user.dart';
 import '../../models/passenger.dart';
 import '../../models/involve.dart';
@@ -20,10 +21,21 @@ class UserAPI {
         }),
         headers: {'Content-Type': 'application/json'},
       );
-      print(username);
-      print(password);
+
       if (response.statusCode == 200) {
-        return json.decode(response.body);
+        // 解析返回的 JSON 数据
+        var data = json.decode(response.body);
+
+        // 检查响应中是否包含 token
+        if (data.containsKey('token')) {
+          // 保存 token 到 SharedPreferences
+          SharedPreferences prefs = await SharedPreferences.getInstance();
+          await prefs.setString('auth_token', data['token']); // 存储 token
+
+          return {'message': 'Login successful', 'token': data['token']};
+        } else {
+          throw Exception('Token not found in response');
+        }
       } else {
         throw Exception('Invalid credentials');
       }
@@ -61,18 +73,19 @@ class UserAPI {
   /// 获取当前登录用户的信息
   Future<User> getUserProfile(String token) async {
     try {
+      print(token);
       final response = await http.get(
         Uri.parse(apiUrl + 'profile/'),
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token', // 添加token
+          'Authorization': 'Token $token', 
         },
       );
-
+      print(response.headers);
       if (response.statusCode == 200) {
-        return User.fromJson(json.decode(response.body));
+        return User.fromJson(json.decode(response.body)); // 解析用户数据
       } else {
-        throw Exception('Failed to fetch user profile');
+        throw Exception('Failed to load user profile: ${response.statusCode}');
       }
     } catch (e) {
       throw Exception('Error fetching user profile: $e');
@@ -82,26 +95,37 @@ class UserAPI {
   // 更新用户信息接口
   /// 更新用户的邮箱和手机号
   Future<User> updateUserProfile(
-      String token, Map<String, dynamic> data) async {
+      String token, String name, String email, String phone) async {
     try {
+      // 构造请求体数据
+      Map<String, dynamic> data = {
+        'name': name,
+        'email': email,
+        'phone_number': phone,
+      };
+
+      // 发送PUT请求更新用户信息
       final response = await http.put(
         Uri.parse(apiUrl + 'profile/'),
         body: json.encode(data),
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token',
+          'Authorization': 'Token $token',
         },
       );
 
       if (response.statusCode == 200) {
+        // 成功时返回更新后的用户信息
         return User.fromJson(json.decode(response.body));
       } else {
-        throw Exception('Invalid data');
+        throw Exception(
+            'Failed to update user profile. Status code: ${response.statusCode}');
       }
     } catch (e) {
       throw Exception('Error updating user profile: $e');
     }
   }
+
 
   // 乘机人信息管理接口
   /// 获取所有乘机人信息
@@ -226,7 +250,7 @@ class UserAPI {
       String token, String certificationType) async {
     try {
       final response = await http.post(
-        Uri.parse('http://your-backend-url/api/qualification-certification/'),
+        Uri.parse(apiUrl + 'qualification-certification/'),
         body: json.encode({
           'certification_type': certificationType,
         }),
@@ -246,6 +270,31 @@ class UserAPI {
     }
   }
 
+  // 修改密码接口
+  /// 用户修改密码
+  Future<bool> changePassword(
+      String token, String oldPassword, String newPassword) async {
+    final response = await http.put(
+      Uri.parse(apiUrl + 'change-password/'),
+      body: json.encode({
+        'old_password': oldPassword,
+        'new_password': newPassword,
+      }),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Token $token',
+      },
+    );
+
+    if (response.statusCode == 200) {
+      return true; // 修改成功
+    } else {
+      // 失败时输出错误信息
+      print('Failed to change password: ${response.body}');
+      return false;
+    }
+  }
+
   // 用户登出接口
   /// 用户退出登录
   Future<Map<String, dynamic>> logout(String token) async {
@@ -254,7 +303,7 @@ class UserAPI {
         Uri.parse(apiUrl + 'logout/'),
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token',
+          'Authorization': 'Token $token',
         },
       );
 

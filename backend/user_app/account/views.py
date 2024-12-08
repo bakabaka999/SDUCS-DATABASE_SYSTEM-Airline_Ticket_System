@@ -1,13 +1,15 @@
 from django.core.exceptions import ObjectDoesNotExist
 from rest_framework import status
+from rest_framework.exceptions import AuthenticationFailed
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, AllowAny
+from rest_framework.authtoken.models import Token
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.models import User as AuthUser
 from .models import User, Passenger, UserPassengerRelation, Invoice
 from .serializers import UserSerializer, PassengerSerializer, InvoiceSerializer
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view, permission_classes
 
 
 # 注册视图：用于处理用户的注册请求
@@ -16,6 +18,7 @@ class RegisterView(APIView):
     用户注册接口。用户通过POST请求进行注册，提供用户名、邮箱和密码。
     注册时会检查用户名和邮箱是否已存在，若有冲突则返回错误。
     """
+    permission_classes = [AllowAny]  # 允许任何用户访问，无需认证
 
     @staticmethod
     def post(request):
@@ -50,6 +53,7 @@ class LoginView(APIView):
     用户登录接口。用户通过POST请求提交用户名和密码，进行身份验证。
     登录成功后会创建会话并返回成功信息；如果登录失败，返回错误信息。
     """
+    permission_classes = [AllowAny]  # 允许任何用户访问，无需认证
 
     def post(self, request):
         # 获取用户名和密码
@@ -63,7 +67,13 @@ class LoginView(APIView):
         if user is not None:
             # 如果验证通过，登录用户并返回成功响应
             login(request, user)
-            return Response({"message": "Login successful"}, status=status.HTTP_200_OK)
+            # 创建 Token 或获取已有 Token
+            token, created = Token.objects.get_or_create(user=user)
+            # 返回登录成功的信息和 Token
+            return Response({
+                "message": "Login successful",
+                "token": token.key  # 将 Token 返回给前端
+            }, status=status.HTTP_200_OK)
 
         # 如果用户名或密码错误，返回错误响应
         return Response({"error": "Invalid credentials"}, status=status.HTTP_400_BAD_REQUEST)
@@ -79,8 +89,13 @@ class UserProfileView(APIView):
 
     @staticmethod
     def get(request):
-        # 获取当前登录的用户
-        user = request.user
+        # 验证 Token
+        try:
+            token = request.headers.get('Authorization').split(' ')[1]  # 获取Bearer Token
+            token_obj = Token.objects.get(key=token)
+            user = token_obj.user
+        except Token.DoesNotExist:
+            raise AuthenticationFailed('Invalid Token')
         # 获取自定义User模型的数据
         user_info = User.objects.get(id=user.id)
         # 序列化用户数据
@@ -90,17 +105,34 @@ class UserProfileView(APIView):
     @staticmethod
     def put(request):
         # 获取当前登录的用户
-        user = request.user
+        user = request.user  # 获取当前认证用户
+
         # 获取自定义User模型的数据
         user_info = User.objects.get(id=user.id)
-        # 使用序列化器更新用户数据
+
+        # 获取Django的内置认证用户模型
+        django_user = AuthUser.objects.get(id=user.id)  # 获取Django认证的User对象
+
+        # 使用序列化器更新自定义用户模型数据
         serializer = UserSerializer(user_info, data=request.data, partial=True)
+
         if serializer.is_valid():
-            # 保存更新后的数据
-            serializer.save()
-            return Response(serializer.data)
-        # 如果数据无效，返回错误
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            # 更新自定义模型的数据
+            updated_user = serializer.save()
+
+            # 同时更新Django内置的认证用户模型（如果有相关字段变动）
+            if 'name' in request.data:  # 检查是否有更新用户名
+                django_user.username = request.data['name']  # 更新Django认证模型的用户名
+            if 'email' in request.data:  # 更新email字段
+                django_user.email = request.data['email']
+            django_user.save()  # 保存Django内置的User模型
+
+            # 返回更新后的用户数据
+            return Response(UserSerializer(updated_user).data)
+
+        else:
+            # 如果数据无效，返回错误
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 # 乘机人管理视图：用户可以通过此接口管理常用的乘机人信息
@@ -302,6 +334,7 @@ class InvoiceView(APIView):
 
 # 资质认证视图：用户可以提交资质认证请求
 @api_view(['POST'])
+@permission_classes([IsAuthenticated])
 def qualification_certification(request):
     """
     资质认证接口。用户可以提交不同类型的认证请求（例如：学生认证、教师认证、老年人认证等）。
@@ -314,13 +347,45 @@ def qualification_certification(request):
     # 在此可以处理资质认证逻辑，例如保存认证信息等
     return Response({"message": "Certification successful"}, status=status.HTTP_200_OK)
 
+# 修改密码视图：用户可以修改密码
+@api_view(['PUT'])
+@permission_classes([IsAuthenticated])
+def change_password(request):
+    """
+    修改用户密码接口。用户通过PUT请求提供旧密码和新密码。
+    """
+    user = request.user  # 获取当前登录的用户
+    old_password = request.data.get("old_password")
+    new_password = request.data.get("new_password")
+
+    # 使用Django的认证功能验证用户身份
+    user = authenticate(request, username=user.username, password=old_password)
+
+    if user is not None:
+        # 设置新密码（更新自定义用户模型）
+        user.password = new_password
+        user.save()
+        # 更新Django认证用户（AuthUser）的密码
+        try:
+            django_user = AuthUser.objects.get(id=user.id)  # 获取对应的Django认证用户
+            django_user.set_password(new_password)  # 设置新密码
+            django_user.save()  # 保存更新后的Django认证用户密码
+        except AuthUser.DoesNotExist:
+            return Response({"error": "Django user not found."}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({"message": "Password updated successfully."}, status=status.HTTP_200_OK)
+    else:
+        return Response({"error": "Old password is incorrect."}, status=status.HTTP_400_BAD_REQUEST)
+
+    return Response({"message": "Password updated successfully."}, status=status.HTTP_200_OK)
 
 # 退出登录视图：用户可以退出登录
 @api_view(['POST'])
+@permission_classes([IsAuthenticated])
 def logout_view(request):
     """
     处理用户退出登录。
     """
+
     try:
         logout(request)
         return Response({"detail": "Successfully logged out."}, status=status.HTTP_200_OK)

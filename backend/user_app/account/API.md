@@ -107,7 +107,6 @@
   "accumulated_miles": "integer",  // 累计里程
   "ticket_count": "integer"   // 购票次数
 }
-
 ```
 - PUT 请求：
 
