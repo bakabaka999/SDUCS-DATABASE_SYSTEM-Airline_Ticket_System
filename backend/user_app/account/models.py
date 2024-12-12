@@ -34,7 +34,6 @@ class Passenger(models.Model):
         ('senior', 'Senior Citizen')
     ]
 
-    person_id = models.CharField(max_length=50, unique=True)  # 乘客ID
     name = models.CharField(max_length=100)  # 乘客姓名
     gender = models.BooleanField(choices=GENDER_CHOICES)  # 性别
     phone_number = models.CharField(max_length=15)  # 手机号

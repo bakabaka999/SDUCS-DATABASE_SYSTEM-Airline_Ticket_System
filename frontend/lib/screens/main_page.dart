@@ -1,5 +1,7 @@
+// main_page.dart
 import 'package:flutter/material.dart';
-import 'user_info.dart';
+import 'user_info.dart'; // 继续引用用户信息页面
+import 'passenger_management.dart'; // 引入乘机人管理页面
 
 class MainPage extends StatelessWidget {
   @override
@@ -30,6 +32,18 @@ class MainPage extends StatelessWidget {
                 );
               },
               child: Text('Go to User Info'),
+            ),
+            SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: () {
+                // 跳转到乘机人管理页面
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (context) => PassengerInfoPage()),
+                );
+              },
+              child: Text('Manage Passengers'),
             ),
           ],
         ),

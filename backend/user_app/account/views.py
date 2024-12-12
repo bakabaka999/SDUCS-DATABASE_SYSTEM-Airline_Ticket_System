@@ -159,7 +159,7 @@ class PassengerView(APIView):
             passengers = [relation.passenger for relation in user_passengers]
             # 序列化乘机人数据
             serializer = PassengerSerializer(passengers, many=True)
-            return Response(serializer.data)
+            return Response(serializer.data, status=status.HTTP_200_OK)
         except Exception as e:
             # 捕获异常并返回错误
             return Response({"detail": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

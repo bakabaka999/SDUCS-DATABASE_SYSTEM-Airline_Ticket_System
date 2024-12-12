@@ -42,6 +42,8 @@ INSTALLED_APPS = [
     'corsheaders',
     'user_app.account',
     'user_app.level',
+    'user_app.document',
+    'user_app.flight',
 ]
 
 MIDDLEWARE = [

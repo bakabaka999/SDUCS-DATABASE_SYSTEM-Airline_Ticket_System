@@ -1,5 +1,5 @@
 class Passenger {
-  final String personId;
+  final int id;
   final String name;
   final bool gender;
   final String phoneNumber;
@@ -8,7 +8,7 @@ class Passenger {
   final String birthDate;
 
   Passenger({
-    required this.personId,
+    required this.id,
     required this.name,
     required this.gender,
     required this.phoneNumber,
@@ -19,7 +19,7 @@ class Passenger {
 
   factory Passenger.fromJson(Map<String, dynamic> json) {
     return Passenger(
-      personId: json['person_id'],
+      id: json['id'],
       name: json['name'],
       gender: json['gender'],
       phoneNumber: json['phone_number'],

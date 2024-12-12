@@ -11,7 +11,7 @@ class UserSerializer(serializers.ModelSerializer):
 class PassengerSerializer(serializers.ModelSerializer):
     class Meta:
         model = Passenger
-        fields = ['person_id', 'name', 'gender', 'phone_number', 'email', 'person_type', 'birth_date']
+        fields = ['id', 'name', 'gender', 'phone_number', 'email', 'person_type', 'birth_date']
 
 
 class InvoiceSerializer(serializers.ModelSerializer):

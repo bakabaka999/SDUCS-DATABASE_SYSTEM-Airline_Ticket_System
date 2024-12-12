@@ -78,10 +78,9 @@ class UserAPI {
         Uri.parse(apiUrl + 'profile/'),
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': 'Token $token', 
+          'Authorization': 'Token $token',
         },
       );
-      print(response.headers);
       if (response.statusCode == 200) {
         return User.fromJson(json.decode(response.body)); // 解析用户数据
       } else {
@@ -126,7 +125,6 @@ class UserAPI {
     }
   }
 
-
   // 乘机人信息管理接口
   /// 获取所有乘机人信息
   Future<List<Passenger>> getPassengers(String token) async {
@@ -135,7 +133,7 @@ class UserAPI {
         Uri.parse(apiUrl + 'passenger/'),
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token',
+          'Authorization': 'Token $token',
         },
       );
 
@@ -160,7 +158,7 @@ class UserAPI {
         body: json.encode(data),
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token',
+          'Authorization': 'Token $token',
         },
       );
 
@@ -207,7 +205,7 @@ class UserAPI {
         body: json.encode(data),
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token',
+          'Authorization': 'Token $token',
         },
       );
 
