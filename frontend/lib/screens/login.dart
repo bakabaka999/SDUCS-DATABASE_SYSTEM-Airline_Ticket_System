@@ -3,7 +3,6 @@ import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../services/user_api/account_api.dart'; // API接口
 import 'register.dart'; // 注册页面
-import 'welcome.dart'; // 欢迎页面
 import 'main_page.dart';
 
 class LoginPage extends StatefulWidget {

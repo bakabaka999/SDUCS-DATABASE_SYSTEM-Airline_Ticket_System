@@ -15,22 +15,23 @@ class DocumentView(APIView):
     permission_classes = [IsAuthenticated]  # 只有认证通过的用户才能访问此接口
 
     @staticmethod
-    def get(request):
-        # 获取当前登录的用户
+    def get(request, passenger_id):
+        # 获取当前用户
         user = request.user
-        try:
-            user = User.objects.get(id=user.id)
-        except ObjectDoesNotExist:
-            return Response({"detail": "用户未找到"}, status=status.HTTP_404_NOT_FOUND)
+        passenger = Passenger.objects.get(id=passenger_id)
 
         try:
-            # 获取当前用户所有乘客的证件信息
-            # 获取当前用户所有的乘机人
-            user_passengers = UserPassengerRelation.objects.filter(user=user)
-            passengers = [relation.passenger for relation in user_passengers]
-            documents = Document.objects.filter(passenger__in=passengers)  # 获取所有关联的证件
+            # 验证当前用户是否拥有此乘机人
+            if not UserPassengerRelation.objects.filter(user=user.id, passenger=passenger.id).exists():
+                return Response({"detail": "您没有权限查看此乘机人的证件信息"}, status=status.HTTP_403_FORBIDDEN)
+
+            # 获取乘机人的所有证件
+            documents = Document.objects.filter(passenger_id=passenger_id)
             serializer = DocumentSerializer(documents, many=True)
-            return Response(serializer.data)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+
+        except Passenger.DoesNotExist:
+            return Response({"detail": "乘机人未找到"}, status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
             return Response({"detail": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
@@ -145,4 +146,3 @@ class PassengerDocumentView(APIView):
         documents = Document.objects.filter(passenger=passenger)
         serializer = DocumentSerializer(documents, many=True)
         return Response(serializer.data)
-

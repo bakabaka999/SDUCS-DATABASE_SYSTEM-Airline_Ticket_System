@@ -1,11 +1,14 @@
+from django.core.cache import cache
 from django.db import transaction
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from .models import Airport, Flight, City, Ticket, Order  # 假设City模型已经包含city_name和pinyin字段
 from django.db.models import Q  # 用于复杂查询
 
-from ..account.models import Passenger
+from .serializers import SimpleOrderSerializer, OrderSerializer
+from ..account.models import Passenger, UserPassengerRelation
 
 
 # 考虑分页优化
@@ -140,70 +143,86 @@ class FlightTicketInfoView(APIView):
 class PurchaseTicketView(APIView):
     """
     用户为其乘机人购买航班机票。
-    输入：用户ID、乘机人ID、机票ID
-    输出：订单信息，购买成功后返回订单详细信息，失败返回错误信息
     """
 
-    def post(self, request):
-        user_id = request.data.get("user_id")
+    @staticmethod
+    def post(request):
+        user_id = request.user.id
         passenger_id = request.data.get("passenger_id")
         ticket_id = request.data.get("ticket_id")
 
-        if not user_id or not passenger_id or not ticket_id:
-            return Response({"error": "Please provide user_id, passenger_id, and ticket_id."},
-                             status=status.HTTP_400_BAD_REQUEST)
+        if not passenger_id or not ticket_id:
+            return Response(
+                {"error": "Missing passenger_id or ticket_id."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
         try:
-            passenger = Passenger.objects.get(id=passenger_id)
-            ticket = Ticket.objects.get(ticket_id=ticket_id)
-
-            # 确保乘客类型与机票类型匹配
-            if passenger.person_type != ticket.ticket_type:
-                return Response({
-                    "error": f"Passenger type '{passenger.person_type}' does not match ticket type '{ticket.ticket_type}'."},
-                    status=status.HTTP_400_BAD_REQUEST)
-
-            # 获取航班信息
-            flight = ticket.flight
-
-            # 确保有足够座位
-            if ticket.seat_type == 'economy' and flight.remaining_economy_seats <= 0:
-                return Response({"error": "No available economy seats for this flight."},
-                                 status=status.HTTP_400_BAD_REQUEST)
-            elif ticket.seat_type == 'business' and flight.remaining_business_seats <= 0:
-                return Response({"error": "No available business class seats for this flight."},
-                                 status=status.HTTP_400_BAD_REQUEST)
-            elif ticket.seat_type == 'first_class' and flight.remaining_first_class_seats <= 0:
-                return Response({"error": "No available first class seats for this flight."},
-                                 status=status.HTTP_400_BAD_REQUEST)
-
-            # 创建订单
             with transaction.atomic():
+                # 获取乘机人和机票信息
+                passenger = Passenger.objects.select_for_update().get(id=passenger_id)
+                ticket = Ticket.objects.select_related("flight").get(ticket_id=ticket_id)
+
+                # 验证乘机人类型与机票类型匹配
+                if passenger.person_type != ticket.ticket_type:
+                    return Response(
+                        {
+                            "error": f"Passenger type '{passenger.person_type}' does not match ticket type '{ticket.ticket_type}'."
+                        },
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
+
+                flight = ticket.flight
+
+                # 锁定航班记录
+                flight = Flight.objects.select_for_update().get(flight_id=flight.flight_id)
+
+                # 确保有足够座位
+                if ticket.seat_type == "economy" and flight.remaining_economy_seats <= 0:
+                    return Response(
+                        {"error": "No available economy seats for this flight."},
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
+                elif ticket.seat_type == "business" and flight.remaining_business_seats <= 0:
+                    return Response(
+                        {"error": "No available business class seats for this flight."},
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
+                elif ticket.seat_type == "first_class" and flight.remaining_first_class_seats <= 0:
+                    return Response(
+                        {"error": "No available first class seats for this flight."},
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
+
+                # 创建订单
                 order = Order.objects.create(
                     passenger=passenger,
                     ticket=ticket,
                     total_price=ticket.price,
-                    status='confirmed'
+                    status="pending",
                 )
 
-                # 根据座位类型更新剩余座位
-                if ticket.seat_type == 'economy':
+                # 更新航班座位
+                if ticket.seat_type == "economy":
                     flight.remaining_economy_seats -= 1
-                elif ticket.seat_type == 'business':
+                elif ticket.seat_type == "business":
                     flight.remaining_business_seats -= 1
-                elif ticket.seat_type == 'first_class':
+                elif ticket.seat_type == "first_class":
                     flight.remaining_first_class_seats -= 1
 
                 flight.save()
 
-            return Response({
-                "message": "Ticket purchased successfully!",
-                "order_id": order.order_id,
-                "ticket_type": ticket.ticket_type,
-                "seat_type": ticket.seat_type,
-                "total_price": order.total_price,
-                "purchase_time": order.purchase_time
-            }, status=status.HTTP_201_CREATED)
+            return Response(
+                {
+                    "message": "Ticket purchased successfully.",
+                    "order_id": order.order_id,
+                    "ticket_type": ticket.ticket_type,
+                    "seat_type": ticket.seat_type,
+                    "total_price": order.total_price,
+                    "purchase_time": order.purchase_time,
+                },
+                status=status.HTTP_201_CREATED,
+            )
 
         except Passenger.DoesNotExist:
             return Response({"error": "Passenger not found."}, status=status.HTTP_404_NOT_FOUND)
@@ -212,4 +231,172 @@ class PurchaseTicketView(APIView):
         except Flight.DoesNotExist:
             return Response({"error": "Flight not found."}, status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
-            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return Response({"error": f"System error: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class ConfirmOrderView(APIView):
+    """
+    支付订单视图，确认订单并扣减座位。
+    """
+    permission_classes = [IsAuthenticated]
+
+    @staticmethod
+    def post(request, order_id):
+        try:
+            # 获取订单
+            order = Order.objects.select_related("ticket__flight", "passenger").get(order_id=order_id)
+
+            # 检查当前用户是否与该订单的乘机人有关联
+            if not UserPassengerRelation.objects.filter(user_id=request.user.id, passenger=order.passenger).exists():
+                return Response(
+                    {"error": "You do not have permission to confirm this order."},
+                    status=status.HTTP_403_FORBIDDEN,
+                )
+
+            # 检查订单状态
+            if order.status != "pending":
+                return Response({"error": "Only pending orders can be confirmed."}, status=status.HTTP_400_BAD_REQUEST)
+
+            flight = order.ticket.flight
+
+            # 锁定航班记录
+            with transaction.atomic():
+                flight = Flight.objects.select_for_update().get(flight_id=flight.flight_id)
+
+                # 确保有足够座位
+                if order.ticket.seat_type == "economy" and flight.remaining_economy_seats <= 0:
+                    return Response(
+                        {"error": "No available economy seats for this flight."},
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
+                elif order.ticket.seat_type == "business" and flight.remaining_business_seats <= 0:
+                    return Response(
+                        {"error": "No available business class seats for this flight."},
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
+                elif order.ticket.seat_type == "first_class" and flight.remaining_first_class_seats <= 0:
+                    return Response(
+                        {"error": "No available first class seats for this flight."},
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
+
+                # 更新订单状态和航班座位
+                order.status = "confirmed"  # 更新订单状态为已支付
+                order.save()
+
+                # 根据座位类型更新航班的座位信息
+                if order.ticket.seat_type == "economy":
+                    flight.remaining_economy_seats -= 1
+                elif order.ticket.seat_type == "business":
+                    flight.remaining_business_seats -= 1
+                elif order.ticket.seat_type == "first_class":
+                    flight.remaining_first_class_seats -= 1
+
+                flight.save()
+
+            return Response(
+                {"message": "Order confirmed successfully.", "order_id": order.order_id, "status": order.status},
+                status=status.HTTP_200_OK,
+            )
+
+        except Order.DoesNotExist:
+            return Response({"error": "Order not found."}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            return Response({"error": f"System error: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class UserOrdersView(APIView):
+    """
+    获取用户的所有订单的简单信息
+    - 可根据订单状态筛选：pending, confirmed, canceled, refunded
+    """
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        status_filter = request.query_params.get('status')  # 获取订单状态筛选条件
+
+        passenger_ids = UserPassengerRelation.objects.filter(user_id=request.user.id).values_list('passenger_id',
+                                                                                                  flat=True)
+
+        orders = Order.objects.filter(passenger_id__in=passenger_ids)
+
+        if status_filter:
+            orders = orders.filter(status=status_filter)
+
+        orders = orders.order_by('-purchase_time')  # 按时间降序排列
+        serializer = SimpleOrderSerializer(orders, many=True)
+        return Response(serializer.data, status=200)
+
+
+class OrderDetailView(APIView):
+    """
+    获取某一订单的详细信息
+    """
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, order_id):
+        try:
+            # 获取订单
+            order = Order.objects.select_related("ticket__flight", "passenger").get(order_id=order_id)
+
+            # 检查当前用户是否与该订单的乘机人有关联
+            if not UserPassengerRelation.objects.filter(user_id=request.user.id, passenger=order.passenger).exists():
+                return Response(
+                    {"error": "You do not have permission to confirm this order."},
+                    status=status.HTTP_403_FORBIDDEN,
+                )
+
+            serializer = OrderSerializer(order)
+            return Response(serializer.data, status=200)
+        except Order.DoesNotExist:
+            return Response({"error": "Order not found or access denied."}, status=404)
+
+
+class CancelOrderView(APIView):
+    """
+    取消订单视图。
+    """
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, order_id):
+        try:
+            # 开启事务并锁定订单
+            with transaction.atomic():
+                # 获取订单并使用 SELECT FOR UPDATE 锁定
+                order = Order.objects.select_related("ticket__flight", "passenger").select_for_update().get(
+                    order_id=order_id)
+
+                # 检查当前用户是否与该订单的乘机人有关联
+                if not UserPassengerRelation.objects.filter(user_id=request.user.id,
+                                                            passenger=order.passenger).exists():
+                    return Response(
+                        {"error": "You do not have permission to cancel this order."},
+                        status=status.HTTP_403_FORBIDDEN,
+                    )
+
+                # 判断订单是否可取消
+                if not order.can_cancel():
+                    return Response(
+                        {"error": "Order cannot be canceled or already refunded."},
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
+
+                # 调用模型的取消订单方法
+                order.cancel_order()
+
+            return Response(
+                {
+                    "message": "Order canceled successfully.",
+                    "order_id": order.order_id,
+                    "refund_amount": order.refund_amount,
+                    "refund_time": order.refund_time,
+                },
+                status=status.HTTP_200_OK,
+            )
+
+        except Order.DoesNotExist:
+            return Response({"error": "Order not found."}, status=status.HTTP_404_NOT_FOUND)
+        except ValueError as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            return Response({"error": f"System error: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

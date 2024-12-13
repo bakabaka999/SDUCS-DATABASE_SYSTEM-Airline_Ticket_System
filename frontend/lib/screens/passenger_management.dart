@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:frontend/screens/document_info.dart';
 import 'package:frontend/models/passenger.dart';
 import 'package:frontend/screens/add_passenger_page.dart';
 import 'package:frontend/services/user_api/account_api.dart';
@@ -76,6 +77,20 @@ class _PassengerInfoPageState extends State<PassengerInfoPage> {
       MaterialPageRoute(builder: (context) => AddPassengerPage()),
     );
     _loadPassengerInfo(); // 刷新列表
+  }
+
+  // 跳转到证件管理页面
+  void _navigateToDocumentsPage() {
+    if (_selectedPassenger == null) return;
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => PassengerDocumentsPage(
+          passengerId: _selectedPassenger!.id,
+        ),
+      ),
+    );
   }
 
   // 更新乘机人信息
@@ -195,8 +210,19 @@ class _PassengerInfoPageState extends State<PassengerInfoPage> {
                     value: 'senior', child: Text('Senior Citizen')),
               ],
               onChanged: _isEditing
-                  ? (value) => setState(() => _selectedPersonType = value as String?)
+                  ? (value) =>
+                      setState(() => _selectedPersonType = value as String?)
                   : null,
+            ),
+            SizedBox(height: 24),
+            ElevatedButton(
+              onPressed: _navigateToDocumentsPage,
+              child: Text('Manage Documents'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.orange,
+                padding: EdgeInsets.symmetric(vertical: 12.0, horizontal: 24.0),
+                textStyle: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              ),
             ),
             SizedBox(height: 24),
             ElevatedButton(

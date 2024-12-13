@@ -7,7 +7,7 @@ import '../../models/involve.dart';
 
 class UserAPI {
   // 后端API的基准url
-  final String apiUrl = "http://127.0.0.1:8000/user/account/";
+  final String apiUrl = "http://localhost:8000/user/account/";
 
   // 用户登录接口
   /// 用户登录。传递用户名和密码，返回登录信息
