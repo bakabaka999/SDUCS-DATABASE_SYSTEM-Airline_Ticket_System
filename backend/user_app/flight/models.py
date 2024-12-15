@@ -9,47 +9,63 @@ from user_app.account.models import Passenger
 
 # Create your models here.
 class Plane(models.Model):
-    plane_id = models.CharField(max_length=6, primary_key=True)
-    model = models.CharField(max_length=100)
-    first_class_seats = models.IntegerField()  # 头等舱座位数
-    business_seats = models.IntegerField()  # 商务舱座位数
-    economy_seats = models.IntegerField()  # 经济舱座位数
+    plane_id = models.CharField(max_length=6, primary_key=True, verbose_name="飞机编号")
+    model = models.CharField(max_length=100, verbose_name="飞机型号")
+    first_class_seats = models.IntegerField(verbose_name="头等舱座位数")  # 头等舱座位数
+    business_seats = models.IntegerField(verbose_name="商务舱座位数")  # 商务舱座位数
+    economy_seats = models.IntegerField(verbose_name="经济舱座位数")  # 经济舱座位数
+
+    class Meta:
+        verbose_name = "飞机"
+        verbose_name_plural = "飞机管理"
 
     def __str__(self):
-        return f"Plane {self.plane_id} - {self.model}"
+        return f"飞机 {self.plane_id} - {self.model}"
 
 
 class Airport(models.Model):
-    airport_code = models.CharField(max_length=4, primary_key=True)
-    airport_code_3 = models.CharField(max_length=3)  # 机场三字编码
-    airport_name = models.CharField(max_length=100)  # 机场名称
-    city = models.ForeignKey('City', on_delete=models.CASCADE, related_name='city')  # 所在城市
+    airport_code = models.CharField(max_length=4, primary_key=True, verbose_name="机场代码")
+    airport_code_3 = models.CharField(max_length=3, verbose_name="机场三字码")  # 机场三字编码
+    airport_name = models.CharField(max_length=100, verbose_name="机场名称")  # 机场名称
+    city = models.ForeignKey('City', on_delete=models.CASCADE, related_name='city', verbose_name="所在城市")  # 所在城市
+
+    class Meta:
+        verbose_name = "机场"
+        verbose_name_plural = "机场管理"
 
     def __str__(self):
         return f"{self.airport_name} ({self.airport_code})"
 
 
 class Flight(models.Model):
-    flight_id = models.IntegerField(primary_key=True)  # 航班号
-    departure_time = models.DateTimeField()  # 起飞时间
-    arrival_time = models.DateTimeField()  # 到达时间
-    departure_airport = models.ForeignKey(Airport, on_delete=models.CASCADE, related_name='departure_airport')  # 起飞机场
-    arrival_airport = models.ForeignKey(Airport, on_delete=models.CASCADE, related_name='arrival_airport')  # 到达机场
-    remaining_first_class_seats = models.IntegerField()  # 剩余头等舱座位数
-    remaining_business_seats = models.IntegerField()  # 剩余商务舱座位数
-    remaining_economy_seats = models.IntegerField()  # 剩余经济舱座位数
-    distance = models.FloatField()  # 航程距离
-    plane = models.ForeignKey(Plane, on_delete=models.CASCADE, related_name='plane')  # 飞机型号
+    flight_id = models.IntegerField(primary_key=True, verbose_name="航班号")  # 航班号
+    departure_time = models.DateTimeField(verbose_name="起飞时间")  # 起飞时间
+    arrival_time = models.DateTimeField(verbose_name="到达时间")  # 到达时间
+    departure_airport = models.ForeignKey(Airport, on_delete=models.CASCADE, related_name='departure_airport', verbose_name="起飞机场")  # 起飞机场
+    arrival_airport = models.ForeignKey(Airport, on_delete=models.CASCADE, related_name='arrival_airport', verbose_name="到达机场")  # 到达机场
+    remaining_first_class_seats = models.IntegerField(verbose_name="剩余头等舱座位数")  # 剩余头等舱座位数
+    remaining_business_seats = models.IntegerField(verbose_name="剩余商务舱座位数")  # 剩余商务舱座位数
+    remaining_economy_seats = models.IntegerField(verbose_name="剩余经济舱座位数")  # 剩余经济舱座位数
+    distance = models.FloatField(verbose_name="航程距离")  # 航程距离
+    plane = models.ForeignKey(Plane, on_delete=models.CASCADE, related_name='plane', verbose_name="飞机")  # 飞机型号
+
+    class Meta:
+        verbose_name = "航班"
+        verbose_name_plural = "航班管理"
 
     def __str__(self):
-        return f"Flight {self.flight_id} - {self.departure_airport} to {self.arrival_airport} - {self.departure_time} to {self.arrival_time}"
+        return f"航班 {self.flight_id} - {self.departure_airport} to {self.arrival_airport} - {self.departure_time} to {self.arrival_time}"
 
 
 class City(models.Model):
-    city_code = models.CharField(max_length=10, primary_key=True)
-    city_name = models.CharField(max_length=100)  # 城市名称
-    province = models.CharField(max_length=100)  # 省份
-    pinyin = models.CharField(max_length=100, blank=True, null=True)  # 存储拼音，用于排序
+    city_code = models.CharField(max_length=10, primary_key=True, verbose_name="城市代码")
+    city_name = models.CharField(max_length=100, verbose_name="城市名称")  # 城市名称
+    province = models.CharField(max_length=100, verbose_name="省份")  # 省份
+    pinyin = models.CharField(max_length=100, blank=True, null=True, verbose_name="拼音")  # 存储拼音，用于排序
+
+    class Meta:
+        verbose_name = "城市"
+        verbose_name_plural = "城市管理"
 
     def save(self, *args, **kwargs):
         # 使用 pinyin 函数将城市名称转换为拼音的首字母
@@ -62,29 +78,29 @@ class City(models.Model):
 
 
 class Ticket(models.Model):
-    ticket_id = models.AutoField(primary_key=True)  # 机票唯一标识符
-    price = models.FloatField()  # 机票价格
-    baggage_allowance = models.FloatField()  # 托运行李重量
+    ticket_id = models.AutoField(primary_key=True, verbose_name="机票号")  # 机票唯一标识符
+    price = models.FloatField(verbose_name="票价")  # 机票价格
+    baggage_allowance = models.FloatField(verbose_name="行李限额（公斤）")  # 托运行李重量
     ticket_type = models.CharField(max_length=50,
-                                   choices=[('adult', 'Adult'),
-                                            ('student', 'Student'),
-                                            ('teacher', 'Teacher'),
-                                            ('senior', 'Senior Citizen')])  # 票类型（成人票、学生票、教师票、老年票等）
+                                   choices=[('adult', '成人票'),
+                                            ('student', '学生票'),
+                                            ('teacher', '教师票'),
+                                            ('senior', '老年票')])  # 票类型（成人票、学生票、教师票、老年票等）
 
     # 增加座位类型字段
     seat_type = models.CharField(max_length=50,
-                                 choices=[('economy', 'Economy'),
-                                          ('business', 'Business'),
-                                          ('first_class', 'First Class')])  # 座位类型（经济舱、商务舱、头等舱）
+                                 choices=[('economy', '经济舱'),
+                                          ('business', '商务舱'),
+                                          ('first_class', '头等舱')])  # 座位类型（经济舱、商务舱、头等舱）
 
-    flight = models.ForeignKey(Flight, on_delete=models.CASCADE, related_name='tickets')  # 关联航班
+    flight = models.ForeignKey(Flight, on_delete=models.CASCADE, related_name='tickets', verbose_name="航班")  # 关联航班
 
     def __str__(self):
-        return f"Ticket {self.ticket_id} - {self.ticket_type} - {self.seat_type} - {self.price} USD"
+        return f"机票 {self.ticket_id} - {self.ticket_type} - {self.seat_type} - {self.price} USD"
 
     class Meta:
-        verbose_name = "Ticket"
-        verbose_name_plural = "Tickets"
+        verbose_name = "机票"
+        verbose_name_plural = "机票管理"
 
 
 class Order(models.Model):
@@ -95,16 +111,17 @@ class Order(models.Model):
     status = models.CharField(
         max_length=20,
         choices=[
-            ('pending', 'Pending'),
-            ('confirmed', 'Confirmed'),
-            ('canceled', 'Canceled'),
-            ('refunded', 'Refunded')
+            ('pending', '待支付'),
+            ('confirmed', '已确认'),
+            ('canceled', '已取消'),
+            ('refunded', '已退款')
         ],
-        default='pending'
+        default='pending',
+        verbose_name="订单状态"
     )  # 订单状态
-    total_price = models.FloatField()  # 总价格（可以是多个机票的总和）
-    refund_amount = models.FloatField(null=True, blank=True)  # 退款金额
-    refund_time = models.DateTimeField(null=True, blank=True)  # 退款时间
+    total_price = models.FloatField(verbose_name="总价格")  # 总价格（可以是多个机票的总和）
+    refund_amount = models.FloatField(null=True, blank=True, verbose_name="退款金额")  # 退款金额
+    refund_time = models.DateTimeField(null=True, blank=True, verbose_name="退款时间")  # 退款时间
 
     def can_cancel(self):
         """
@@ -158,8 +175,10 @@ class Order(models.Model):
         return self.ticket.flight.departure_time <= datetime.now()
 
     def __str__(self):
-        return f"Order {self.order_id} - {self.passenger.name} - {self.ticket.ticket_type} - {self.purchase_time}"
+        return f"订单 {self.order_id} - 乘机人： {self.passenger.name} - 机票： {self.ticket.ticket_type} - 购买时间： {self.purchase_time}"
 
     class Meta:
-        verbose_name = "Order"
-        verbose_name_plural = "Orders"
+        verbose_name = "订单"
+        verbose_name_plural = "订单管理"
+
+

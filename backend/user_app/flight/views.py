@@ -1,5 +1,6 @@
-from django.core.cache import cache
+from datetime import datetime, timedelta
 from django.db import transaction
+from django.utils.timezone import make_aware
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -8,7 +9,7 @@ from .models import Airport, Flight, City, Ticket, Order  # 假设City模型已�
 from django.db.models import Q  # 用于复杂查询
 
 from .serializers import SimpleOrderSerializer, OrderSerializer
-from ..account.models import Passenger, UserPassengerRelation
+from ..account.models import Passenger, UserPassengerRelation, User
 
 
 # 考虑分页优化
@@ -18,7 +19,6 @@ class CityView(APIView):
     城市查询接口。支持按拼音首字母排序的所有城市查询和模糊查询。
     """
 
-    # 查询所有城市并按拼音首字母排序
     @staticmethod
     def get(request):
         query = request.query_params.get('query', '')  # 获取查询参数，默认为空字符串
@@ -32,59 +32,145 @@ class CityView(APIView):
             cities = City.objects.all().order_by('pinyin')
 
         # 将城市数据序列化并返回
-        city_list = [{"city_name": city.city_name, "pinyin": city.pinyin} for city in cities]
+        city_list = [
+            {
+                "city_name": city.city_name,  # 城市名称
+                "city_code": city.city_code,  # 城市编号
+                "pinyin": city.pinyin,  # 城市拼音
+            }
+            for city in cities
+        ]
         return Response(city_list, status=status.HTTP_200_OK)
 
 
 class SearchFlightView(APIView):
     """
     根据城市外码查询航班。
-    输入：起始城市外码（departure_city_code）、终点城市外码（arrival_city_code）
+    输入：起始城市外码（departure_city_code）、终点城市外码（arrival_city_code）、起飞日期（departure_date）
     输出：符合条件的所有航班信息
     """
 
-    def get(self, request):
+    @staticmethod
+    def get(request):
         # 获取查询参数
         departure_city_code = request.query_params.get('departure_city_code')
         arrival_city_code = request.query_params.get('arrival_city_code')
+        departure_date = request.query_params.get('departure_date')  # 新增参数：起飞日期
 
         # 校验参数
         if not departure_city_code or not arrival_city_code:
-            return Response({"error": "Please provide both departure and arrival city codes."},
-                            status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"error": "Please provide both departure and arrival city codes."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
-        # 查找起始城市和终点城市
         try:
-            departure_airport = Airport.objects.get(airport_code=departure_city_code)
-            arrival_airport = Airport.objects.get(airport_code=arrival_city_code)
-        except Airport.DoesNotExist:
-            return Response({"error": "One or both of the provided city codes are invalid."},
-                            status=status.HTTP_404_NOT_FOUND)
+            print(departure_city_code, arrival_city_code, departure_date)
+            # 查找起始城市和终点城市的所有机场
+            departure_airports = Airport.objects.filter(city__city_code=departure_city_code)
+            print(departure_airports)
+            arrival_airports = Airport.objects.filter(city__city_code=arrival_city_code)
+            print(arrival_airports)
 
-        # 查找航班
-        flights = Flight.objects.filter(departure_airport=departure_airport, arrival_airport=arrival_airport)
+            if not departure_airports.exists() or not arrival_airports.exists():
+                return Response(
+                    {"error": "No airports found for one or both provided city codes."},
+                    status=status.HTTP_404_NOT_FOUND
+                )
 
-        # 如果没有找到航班
-        if not flights:
-            return Response({"message": "No flights found for the provided city codes."},
-                            status=status.HTTP_404_NOT_FOUND)
+            # 查询这些机场之间的航班
+            flight_query = Flight.objects.filter(
+                departure_airport__in=departure_airports,
+                arrival_airport__in=arrival_airports,
+            )
 
-        # 序列化航班信息
-        flight_data = []
-        for flight in flights:
-            flight_data.append({
-                "flight_id": flight.flight_id,
-                "departure_time": flight.departure_time,
-                "arrival_time": flight.arrival_time,
-                "departure_airport": flight.departure_airport.airport_name,
-                "arrival_airport": flight.arrival_airport.airport_name,
-                "remaining_first_class_seats": flight.remaining_first_class_seats,
-                "remaining_business_seats": flight.remaining_business_seats,
-                "remaining_economy_seats": flight.remaining_economy_seats,
-                "plane_model": flight.plane.model,
-            })
+            # 如果提供了起飞日期，则进一步筛选
+            if departure_date:
+                try:
+                    # 转换日期字符串为 UTC 时间
+                    start_time = make_aware(datetime.strptime(departure_date, "%Y-%m-%d"))
+                    end_time = start_time + timedelta(days=1)
 
-        return Response(flight_data, status=status.HTTP_200_OK)
+                    # 直接过滤时间范围，避免 __date 失效
+                    flight_query = flight_query.filter(
+                        departure_time__gte=start_time,
+                        departure_time__lt=end_time
+                    )
+                except ValueError:
+                    return Response(
+                        {"error": "Invalid date format. Please use YYYY-MM-DD."},
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
+
+            print(flight_query)
+
+            # 如果没有找到航班
+            if not flight_query.exists():
+                return Response(
+                    {"message": "No flights found for the provided city codes and date."},
+                    status=status.HTTP_404_NOT_FOUND
+                )
+
+            # 序列化航班信息
+            flight_data = []
+            for flight in flight_query:
+                flight_data.append({
+                    "flight_id": flight.flight_id,
+                    "departure_time": flight.departure_time,
+                    "arrival_time": flight.arrival_time,
+                    "departure_airport": flight.departure_airport.airport_name,
+                    "arrival_airport": flight.arrival_airport.airport_name,
+                    "remaining_first_class_seats": flight.remaining_first_class_seats,
+                    "remaining_business_seats": flight.remaining_business_seats,
+                    "remaining_economy_seats": flight.remaining_economy_seats,
+                    "plane_model": flight.plane.model,
+                })
+
+            return Response(flight_data, status=status.HTTP_200_OK)
+
+        except Exception as e:
+            return Response(
+                {"error": f"An error occurred: {str(e)}"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+
+class MinimumTicketPriceView(APIView):
+    """
+    获取某航班的最低成人票票价及座位类型接口
+    输入：航班ID
+    输出：最低成人票票价及座位类型
+    """
+
+    @staticmethod
+    def get(request, flight_id):
+        try:
+            # 获取航班的所有成人票
+            tickets = Ticket.objects.filter(flight_id=flight_id, ticket_type='adult')
+
+            # 如果没有找到成人票，返回404
+            if not tickets.exists():
+                return Response(
+                    {"message": "No adult tickets found for the provided flight ID."},
+                    status=status.HTTP_404_NOT_FOUND,
+                )
+
+            # 获取最低价格的机票
+            min_ticket = tickets.order_by('price').first()
+
+            return Response(
+                {
+                    "flight_id": flight_id,
+                    "min_price": min_ticket.price,
+                    "seat_type": min_ticket.seat_type,  # 返回座位类型
+                },
+                status=status.HTTP_200_OK,
+            )
+        except Exception as e:
+            return Response(
+                {"message": f"An error occurred: {str(e)}"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
 
 
 class FlightTicketInfoView(APIView):
@@ -147,7 +233,6 @@ class PurchaseTicketView(APIView):
 
     @staticmethod
     def post(request):
-        user_id = request.user.id
         passenger_id = request.data.get("passenger_id")
         ticket_id = request.data.get("ticket_id")
 
@@ -217,6 +302,7 @@ class PurchaseTicketView(APIView):
                     "message": "Ticket purchased successfully.",
                     "order_id": order.order_id,
                     "ticket_type": ticket.ticket_type,
+                    "status": order.status,
                     "seat_type": ticket.seat_type,
                     "total_price": order.total_price,
                     "purchase_time": order.purchase_time,
@@ -225,10 +311,13 @@ class PurchaseTicketView(APIView):
             )
 
         except Passenger.DoesNotExist:
+            print("Passenger not found.")
             return Response({"error": "Passenger not found."}, status=status.HTTP_404_NOT_FOUND)
         except Ticket.DoesNotExist:
+            print("Ticket not found.")
             return Response({"error": "Ticket not found."}, status=status.HTTP_404_NOT_FOUND)
         except Flight.DoesNotExist:
+            print("Flight not found.")
             return Response({"error": "Flight not found."}, status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
             return Response({"error": f"System error: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
@@ -246,8 +335,10 @@ class ConfirmOrderView(APIView):
             # 获取订单
             order = Order.objects.select_related("ticket__flight", "passenger").get(order_id=order_id)
 
+            auth_user = request.user
+            user = User.objects.get(name=auth_user.username)
             # 检查当前用户是否与该订单的乘机人有关联
-            if not UserPassengerRelation.objects.filter(user_id=request.user.id, passenger=order.passenger).exists():
+            if not UserPassengerRelation.objects.filter(user_id=user.id, passenger=order.passenger).exists():
                 return Response(
                     {"error": "You do not have permission to confirm this order."},
                     status=status.HTTP_403_FORBIDDEN,
@@ -315,8 +406,11 @@ class UserOrdersView(APIView):
     def get(self, request):
         status_filter = request.query_params.get('status')  # 获取订单状态筛选条件
 
-        passenger_ids = UserPassengerRelation.objects.filter(user_id=request.user.id).values_list('passenger_id',
-                                                                                                  flat=True)
+        auth_user = request.user
+        user = User.objects.get(name=auth_user.username)
+
+        passenger_ids = UserPassengerRelation.objects.filter(user_id=user.id).values_list('passenger_id',
+                                                                                          flat=True)
 
         orders = Order.objects.filter(passenger_id__in=passenger_ids)
 
@@ -339,8 +433,10 @@ class OrderDetailView(APIView):
             # 获取订单
             order = Order.objects.select_related("ticket__flight", "passenger").get(order_id=order_id)
 
+            auth_user = request.user
+            user = User.objects.get(name=auth_user.username)
             # 检查当前用户是否与该订单的乘机人有关联
-            if not UserPassengerRelation.objects.filter(user_id=request.user.id, passenger=order.passenger).exists():
+            if not UserPassengerRelation.objects.filter(user_id=user.id, passenger=order.passenger).exists():
                 return Response(
                     {"error": "You do not have permission to confirm this order."},
                     status=status.HTTP_403_FORBIDDEN,
@@ -364,25 +460,43 @@ class CancelOrderView(APIView):
             with transaction.atomic():
                 # 获取订单并使用 SELECT FOR UPDATE 锁定
                 order = Order.objects.select_related("ticket__flight", "passenger").select_for_update().get(
-                    order_id=order_id)
+                    order_id=order_id
+                )
+
+                auth_user = request.user
+                user = User.objects.get(name=auth_user.username)
 
                 # 检查当前用户是否与该订单的乘机人有关联
-                if not UserPassengerRelation.objects.filter(user_id=request.user.id,
+                if not UserPassengerRelation.objects.filter(user_id=user.id,
                                                             passenger=order.passenger).exists():
                     return Response(
                         {"error": "You do not have permission to cancel this order."},
                         status=status.HTTP_403_FORBIDDEN,
                     )
 
-                # 判断订单是否可取消
-                if not order.can_cancel():
+                # 判断订单状态
+                if order.status == 'confirmed':
+                    # 已支付订单逻辑：调用模型方法取消订单并计算退款
+                    if not order.can_cancel():
+                        return Response(
+                            {"error": "Order cannot be canceled or already refunded."},
+                            status=status.HTTP_400_BAD_REQUEST,
+                        )
+                    order.cancel_order()
+
+                elif order.status == 'pending':
+                    # 未支付订单逻辑：直接取消订单，无需退款且无需退还座位
+                    order.status = 'canceled'
+                    order.refund_amount = None
+                    order.refund_time = None
+                    order.save()
+
+                else:
+                    # 订单已取消或已退款
                     return Response(
-                        {"error": "Order cannot be canceled or already refunded."},
+                        {"error": "Order is already canceled or refunded."},
                         status=status.HTTP_400_BAD_REQUEST,
                     )
-
-                # 调用模型的取消订单方法
-                order.cancel_order()
 
             return Response(
                 {

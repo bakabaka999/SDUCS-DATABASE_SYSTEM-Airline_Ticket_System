@@ -1,6 +1,6 @@
 from django.urls import path
 from .views import CityView, SearchFlightView, FlightTicketInfoView, PurchaseTicketView, ConfirmOrderView, \
-    UserOrdersView, OrderDetailView, CancelOrderView
+    UserOrdersView, OrderDetailView, CancelOrderView, MinimumTicketPriceView
 
 urlpatterns = [
     # 搜索城市
@@ -8,6 +8,9 @@ urlpatterns = [
 
     # 按城市搜索航班
     path('search/', SearchFlightView.as_view(), name='flight_search'),
+
+    # 获取航班最低成人票票价
+    path('ticket/min_price/<int:flight_id>/', MinimumTicketPriceView.as_view(), name='min_ticket_price'),
 
     # 获取某一航班的所有机票信息
     path('ticket/<int:flight_id>/', FlightTicketInfoView.as_view(), name='flight_detail'),

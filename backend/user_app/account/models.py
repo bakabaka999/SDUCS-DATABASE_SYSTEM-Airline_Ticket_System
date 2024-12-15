@@ -3,35 +3,35 @@ from django.db import models
 
 # Create your models here.
 class User(models.Model):
-    name = models.CharField(max_length=255, unique=True)
-    email = models.EmailField(unique=True)
-    phone_number = models.CharField(max_length=15, null=True, blank=True)
-    password = models.CharField(max_length=255)  # 后期可以加上加密
+    name = models.CharField(max_length=255, unique=True, verbose_name='用户名')
+    email = models.EmailField(unique=True, verbose_name='邮箱')
+    phone_number = models.CharField(max_length=15, null=True, blank=True, verbose_name='手机号')
+    password = models.CharField(max_length=255, verbose_name='密码')  # 后期可以加上加密
 
     # 账户信息
-    accumulated_miles = models.FloatField(default=0)  # 累计里程
-    ticked_count = models.IntegerField(default=0)  # 购票次数
+    accumulated_miles = models.FloatField(default=0, verbose_name='累计里程')  # 累计里程
+    ticked_count = models.IntegerField(default=0, verbose_name='已购票数')  # 购票次数
 
     def __str__(self):
         return self.name
 
     class Meta:
-        verbose_name = 'User'
-        verbose_name_plural = 'Users'
+        verbose_name = '用户'
+        verbose_name_plural = '用户管理'
 
 
 # 乘客信息
 class Passenger(models.Model):
     GENDER_CHOICES = [
-        (True, 'Male'),
-        (False, 'Female')
+        (True, '男'),
+        (False, '女')
     ]
 
     PERSON_TYPE_CHOICES = [
-        ('adult', 'Adult'),
-        ('student', 'Student'),
-        ('teacher', 'Teacher'),
-        ('senior', 'Senior Citizen')
+        ('adult', '成人'),
+        ('student', '学生'),
+        ('teacher', '教师'),
+        ('senior', '老人')
     ]
 
     name = models.CharField(max_length=100)  # 乘客姓名
@@ -42,8 +42,8 @@ class Passenger(models.Model):
     birth_date = models.DateField(null=True, blank=True)  # 出生日期
 
     class Meta:
-        verbose_name = "Passenger"
-        verbose_name_plural = "Passengers"
+        verbose_name = "乘客"
+        verbose_name_plural = "乘客管理"
 
     def __str__(self):
         return self.name

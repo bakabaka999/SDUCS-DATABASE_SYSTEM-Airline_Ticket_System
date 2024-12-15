@@ -17,7 +17,8 @@ class DocumentView(APIView):
     @staticmethod
     def get(request, passenger_id):
         # 获取当前用户
-        user = request.user
+        auth_user = request.user
+        user = User.objects.get(name=auth_user.username)
         passenger = Passenger.objects.get(id=passenger_id)
 
         try:
@@ -40,7 +41,7 @@ class DocumentView(APIView):
         # 创建新的证件信息
         user = request.user
         try:
-            user = User.objects.get(id=user.id)
+            user = User.objects.get(name=user.username)
         except ObjectDoesNotExist:
             return Response({"detail": "用户未找到"}, status=status.HTTP_404_NOT_FOUND)
 
@@ -74,7 +75,7 @@ class DocumentView(APIView):
         # 验证当前用户是否有权修改此证件（通过证件关联的乘客检查）
         user = request.user
         try:
-            user = User.objects.get(id=user.id)
+            user = User.objects.get(name=user.username)
         except ObjectDoesNotExist:
             return Response({"detail": "用户未找到"}, status=status.HTTP_404_NOT_FOUND)
 

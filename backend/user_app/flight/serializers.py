@@ -38,7 +38,7 @@ class SimpleOrderSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Order
-        fields = ['order_id', 'passenger_name', 'status', 'flight_info']
+        fields = ['order_id', 'passenger_name', 'status', 'total_price', 'purchase_time', 'flight_info']
 
     @staticmethod
     def get_flight_info(obj):

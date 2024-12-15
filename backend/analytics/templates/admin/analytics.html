@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>统计数据 - 航空售票系统</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f4f6f9;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            scroll-behavior: smooth;
+        }
+
+        /* 侧边栏 */
+        .sidebar {
+            background-color: #2c3e50;
+            color: white;
+            height: 100vh;
+            position: fixed;
+            width: 250px;
+            overflow-y: auto;
+        }
+
+        .sidebar .nav-link {
+            color: white;
+            margin: 10px 0;
+            font-size: 18px;
+            display: flex;
+            align-items: center;
+            transition: all 0.3s;
+        }
+
+        .sidebar .nav-link:hover {
+            background-color: #1abc9c;
+            border-radius: 8px;
+            color: white;
+        }
+
+        .sidebar .nav-link i {
+            margin-right: 10px;
+        }
+
+        /* 主体内容 */
+        .content {
+            margin-left: 260px;
+            padding: 20px;
+        }
+
+        h1 {
+            color: #34495e;
+            font-weight: bold;
+            margin-bottom: 30px;
+        }
+
+        h2 {
+            margin-top: 30px;
+            color: #2c3e50;
+        }
+
+        /* 卡片样式 */
+        .stats-card {
+            border-radius: 12px;
+            color: white;
+            padding: 20px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            animation: float 3s ease-in-out infinite; /* 默认浮动动画 */
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .stats-card:hover {
+            transform: translateY(-10px) scale(1.05); /* 悬停时上浮并放大 */
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+        }
+
+        .stats-card i {
+            font-size: 32px;
+            margin-right: 10px;
+        }
+
+        .stats-card h5 {
+            margin: 0;
+            font-size: 24px;
+            font-weight: bold;
+        }
+
+        .stats-card p {
+            margin: 0;
+            font-size: 16px;
+        }
+
+        /* 浮动动画 */
+        @keyframes float {
+            0% {
+                transform: translateY(0px);
+            }
+            50% {
+                transform: translateY(-8px);
+            }
+            100% {
+                transform: translateY(0px);
+            }
+        }
+
+        /* 图表区域 */
+        .chart-container {
+            background-color: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+
+        .chart-container img {
+            max-height: 400px;
+            width: 100%;
+            object-fit: contain;
+        }
+
+        /* 返回顶部按钮 */
+        #back-to-top {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            background-color: #1abc9c;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 50%;
+            font-size: 18px;
+            display: none;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+    </style>
+</head>
+<body>
+    <!-- 侧边栏 -->
+    <div class="sidebar d-flex flex-column p-3">
+        <h4 class="text-center mt-3 mb-4">
+            <i class="fas fa-plane-departure"></i> 航空售票系统
+        </h4>
+        <nav class="nav flex-column">
+            <a class="nav-link" href="#overview"><i class="fas fa-chart-pie"></i> 数据概览</a>
+            <a class="nav-link" href="#order-trend"><i class="fas fa-chart-line"></i> 订单趋势</a>
+            <a class="nav-link" href="#revenue-trend"><i class="fas fa-chart-bar"></i> 每日收入</a>
+            <a class="nav-link" href="#order-status"><i class="fas fa-pie-chart"></i> 订单状态分布</a>
+        </nav>
+        <button id="back-to-top" title="返回顶部">
+            <i class="fas fa-arrow-up"></i>
+        </button>
+    </div>
+
+    <!-- 主体内容 -->
+    <div class="content">
+        <h1>统计数据概览</h1>
+
+        <!-- 数据概览 -->
+        <div id="overview" class="row g-4 mb-4">
+            <div class="col-md-4">
+                <div class="stats-card bg-primary d-flex align-items-center">
+                    <i class="fas fa-users"></i>
+                    <div>
+                        <p>总用户数</p>
+                        <h5>{{ stats.total_users }}</h5>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="stats-card bg-success d-flex align-items-center">
+                    <i class="fas fa-file-invoice"></i>
+                    <div>
+                        <p>总订单数</p>
+                        <h5>{{ stats.total_orders }}</h5>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="stats-card bg-warning d-flex align-items-center">
+                    <i class="fas fa-dollar-sign"></i>
+                    <div>
+                        <p>总销售额</p>
+                        <h5>￥{{ stats.total_sales }}</h5>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 图表展示 -->
+        <div id="order-trend" class="chart-container">
+            <h2>订单趋势图</h2>
+            <img src="{{ order_trend_chart }}" alt="订单趋势图">
+        </div>
+
+        <div id="revenue-trend" class="chart-container">
+            <h2>每日收入趋势</h2>
+            <img src="{{ revenue_trend_chart }}" alt="每日收入趋势图">
+        </div>
+
+        <div id="order-status" class="chart-container">
+            <h2>订单状态分布</h2>
+            <img src="{{ order_status_chart }}" alt="订单状态分布图">
+        </div>
+    </div>
+
+    <!-- 返回顶部按钮脚本 -->
+    <script>
+        const backToTopButton = document.getElementById('back-to-top');
+
+        window.addEventListener('scroll', () => {
+            if (window.scrollY > 300) {
+                backToTopButton.style.display = 'block';
+            } else {
+                backToTopButton.style.display = 'none';
+            }
+        });
+
+        backToTopButton.addEventListener('click', () => {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        });
+    </script>
+</body>
+</html>

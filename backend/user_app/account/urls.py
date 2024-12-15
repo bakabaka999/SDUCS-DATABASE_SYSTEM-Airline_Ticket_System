@@ -1,7 +1,7 @@
 # app_name/urls.py
 from django.urls import path
 from .views import RegisterView, LoginView, UserProfileView, PassengerView, InvoiceView, qualification_certification, \
-    logout_view, change_password
+    logout_view, change_password, ValidateTokenView
 
 urlpatterns = [
     # 用户注册接口
@@ -9,6 +9,9 @@ urlpatterns = [
 
     # 用户登录接口
     path('login/', LoginView.as_view(), name='login'),
+
+    # token验证接口
+path('token/', ValidateTokenView.as_view(), name='validate_token'),
 
     # 用户个人信息接口
     path('profile/', UserProfileView.as_view(), name='user_profile'),

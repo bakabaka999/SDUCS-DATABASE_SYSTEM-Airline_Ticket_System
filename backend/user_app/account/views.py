@@ -79,6 +79,18 @@ class LoginView(APIView):
         return Response({"error": "Invalid credentials"}, status=status.HTTP_400_BAD_REQUEST)
 
 
+class ValidateTokenView(APIView):
+    """
+    用于验证Token是否有效
+    """
+    permission_classes = [IsAuthenticated]  # 确保只有携带有效Token的用户能访问
+
+    @staticmethod
+    def get(request):
+        # 如果用户通过了IsAuthenticated的认证，则Token是有效的
+        return Response({"message": "Token is valid"}, status=200)
+
+
 # 获取用户个人信息：用户通过此接口可以查看自己账户的基本信息
 class UserProfileView(APIView):
     """
@@ -97,7 +109,7 @@ class UserProfileView(APIView):
         except Token.DoesNotExist:
             raise AuthenticationFailed('Invalid Token')
         # 获取自定义User模型的数据
-        user_info = User.objects.get(id=user.id)
+        user_info = User.objects.get(name=user.username)
         # 序列化用户数据
         serializer = UserSerializer(user_info)
         return Response(serializer.data)
@@ -108,7 +120,7 @@ class UserProfileView(APIView):
         user = request.user  # 获取当前认证用户
 
         # 获取自定义User模型的数据
-        user_info = User.objects.get(id=user.id)
+        user_info = User.objects.get(name=user.username)
 
         # 获取Django的内置认证用户模型
         django_user = AuthUser.objects.get(id=user.id)  # 获取Django认证的User对象
@@ -149,7 +161,7 @@ class PassengerView(APIView):
 
         # 显式获取 user 实例，避免 SimpleLazyObject 问题
         try:
-            user = User.objects.get(id=user.id)
+            user = User.objects.get(name=user.username)
         except ObjectDoesNotExist:
             return Response({"detail": "用户未找到"}, status=status.HTTP_404_NOT_FOUND)
 
@@ -175,7 +187,7 @@ class PassengerView(APIView):
 
         # 显式获取 user 实例，避免 SimpleLazyObject 问题
         try:
-            user = User.objects.get(id=user.id)
+            user = User.objects.get(name=user.username)
         except ObjectDoesNotExist:
             return Response({"detail": "用户未找到"}, status=status.HTTP_404_NOT_FOUND)
 
@@ -210,7 +222,7 @@ class PassengerView(APIView):
 
         # 显式获取 user 实例，避免 SimpleLazyObject 问题
         try:
-            user = User.objects.get(id=user.id)
+            user = User.objects.get(name=user.username)
         except ObjectDoesNotExist:
             return Response({"detail": "用户未找到"}, status=status.HTTP_404_NOT_FOUND)
 
@@ -239,7 +251,7 @@ class PassengerView(APIView):
 
         # 显式获取 user 实例，避免 SimpleLazyObject 问题
         try:
-            user = User.objects.get(id=user.id)
+            user = User.objects.get(name=user.username)
         except ObjectDoesNotExist:
             return Response({"detail": "用户未找到"}, status=status.HTTP_404_NOT_FOUND)
 
