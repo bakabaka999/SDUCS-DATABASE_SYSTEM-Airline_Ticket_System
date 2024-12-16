@@ -45,19 +45,19 @@ class _LevelPageState extends State<LevelPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.teal.shade50,
-      appBar: AppBar(
-        title: Text("我的等级"),
-        centerTitle: true,
-        flexibleSpace: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [Colors.teal.shade700, Colors.teal.shade300],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-          ),
-        ),
-      ),
+      // appBar: AppBar(
+      //   title: Text("我的等级"),
+      //   centerTitle: true,
+      //   flexibleSpace: Container(
+      //     decoration: BoxDecoration(
+      //       gradient: LinearGradient(
+      //         colors: [Colors.teal.shade700, Colors.teal.shade300],
+      //         begin: Alignment.topLeft,
+      //         end: Alignment.bottomRight,
+      //       ),
+      //     ),
+      //   ),
+      // ),
       body: _isLoading
           ? Center(child: CircularProgressIndicator(color: Colors.teal))
           : _errorMessage != null

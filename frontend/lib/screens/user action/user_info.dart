@@ -194,8 +194,11 @@ class _UserInfoPageState extends State<UserInfoPage> {
       children: [
         ElevatedButton.icon(
           onPressed: () {
-            Navigator.push(context,
-                MaterialPageRoute(builder: (_) => ChangePasswordPage()));
+            // 跳转到修改密码页面
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => ChangePasswordPage()),
+            );
           },
           style: ElevatedButton.styleFrom(
             backgroundColor: Colors.orangeAccent,
@@ -209,16 +212,24 @@ class _UserInfoPageState extends State<UserInfoPage> {
         ),
         ElevatedButton.icon(
           onPressed: () {
-            setState(() {
+            if (_isEditing) {
+              // 保存用户信息
               _saveUserProfile();
-              _isEditing = !_isEditing;
-            });
+            } else {
+              // 进入编辑模式
+              setState(() {
+                _isEditing = true;
+              });
+            }
           },
           style: ElevatedButton.styleFrom(
             backgroundColor: _isEditing ? Colors.green : Colors.blueAccent,
             padding: EdgeInsets.symmetric(vertical: 12, horizontal: 20),
           ),
-          icon: Icon(_isEditing ? Icons.save : Icons.edit, color: Colors.white),
+          icon: Icon(
+            _isEditing ? Icons.save : Icons.edit,
+            color: Colors.white,
+          ),
           label: Text(
             _isEditing ? "保存" : "编辑",
             style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
@@ -227,4 +238,5 @@ class _UserInfoPageState extends State<UserInfoPage> {
       ],
     );
   }
+
 }

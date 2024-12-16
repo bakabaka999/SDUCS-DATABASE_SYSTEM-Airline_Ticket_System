@@ -14,6 +14,11 @@ matplotlib.use('Agg')  # 必须在导入 pyplot 之前设置后端
 
 import matplotlib.pyplot as plt
 
+from matplotlib import rcParams
+
+rcParams['font.sans-serif'] = ['SimHei']  # 设置字体为黑体
+rcParams['axes.unicode_minus'] = False  # 解决负号显示问题
+
 
 class AnalyticsAdmin:
     """扩展自定义管理站点的统计功能"""
@@ -38,9 +43,6 @@ class AnalyticsAdmin:
         counts = [order['order_count'] for order in orders_by_date]
 
         # 设置中文字体以解决中文显示问题
-        from matplotlib import rcParams
-        rcParams['font.sans-serif'] = ['SimHei']  # 设置字体为黑体
-        rcParams['axes.unicode_minus'] = False  # 解决负号显示问题
 
         plt.figure(figsize=(8, 4))
         plt.plot(dates, counts, marker='o', color='blue', label='订单数')

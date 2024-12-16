@@ -181,10 +181,10 @@ class _OrderManagementPageState extends State<OrderManagementPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.grey.shade100,
-      appBar: AppBar(
-        title: Text("订单管理"),
-        backgroundColor: Colors.teal,
-      ),
+      // appBar: AppBar(
+      //   title: Text("订单管理"),
+      //   backgroundColor: Colors.teal,
+      // ),
       body: Column(
         children: [
           // 筛选按钮
