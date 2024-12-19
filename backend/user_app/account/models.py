@@ -8,6 +8,9 @@ class User(models.Model):
     phone_number = models.CharField(max_length=15, null=True, blank=True, verbose_name='手机号')
     password = models.CharField(max_length=255, verbose_name='密码')  # 后期可以加上加密
 
+    # 存储头像图片的路径
+    avatar = models.ImageField(upload_to='avatars/', null=True, blank=True, verbose_name='用户头像')
+
     # 账户信息
     accumulated_miles = models.FloatField(default=0, verbose_name='累计里程')  # 累计里程
     ticked_count = models.IntegerField(default=0, verbose_name='已购票数')  # 购票次数

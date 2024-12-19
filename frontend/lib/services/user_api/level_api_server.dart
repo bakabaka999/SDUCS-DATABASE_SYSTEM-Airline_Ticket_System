@@ -3,8 +3,8 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 class LevelAPI {
-  // final String apiUrl = "http://localhost:8000/user/level/";
-  final String apiUrl = "http://159.75.132.182:8000/level/";
+  final String apiUrl = "http://localhost:8000/user/level/";
+  // final String apiUrl = "http://159.75.132.182:8000/user/level/";
 
   // 获取用户等级
   Future<Map<String, dynamic>> getUserLevel() async {
@@ -24,8 +24,11 @@ class LevelAPI {
         },
       );
 
+      print(response.body);
+
       if (response.statusCode == 200) {
-        return json.decode(response.body);
+        final decodedBody = utf8.decode(response.bodyBytes);
+        return json.decode(decodedBody);
       } else {
         throw Exception(
             "Failed to fetch user level. Status code: ${response.statusCode}");
@@ -54,7 +57,8 @@ class LevelAPI {
       );
 
       if (response.statusCode == 200) {
-        return json.decode(response.body);
+        final decodedBody = utf8.decode(response.bodyBytes);
+        return json.decode(decodedBody);
       } else {
         throw Exception(
             "Failed to fetch next level. Status code: ${response.statusCode}");
@@ -83,7 +87,8 @@ class LevelAPI {
       );
 
       if (response.statusCode == 200) {
-        return json.decode(response.body)['promotions'];
+        final decodedBody = utf8.decode(response.bodyBytes);
+        return json.decode(decodedBody)['promotions'];
       } else {
         throw Exception(
             "Failed to fetch promotions. Status code: ${response.statusCode}");

@@ -4,8 +4,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../models/document.dart';
 
 class DocumentApi {
-  // final String apiUrl = "http://localhost:8000/user/";
-  final String apiUrl = "http://159.75.132.182:8000/user/";
+  final String apiUrl = "http://localhost:8000/user/";
+  // final String apiUrl = "http://159.75.132.182:8000/user/";
 
   /// 获取 Token
   Future<String?> _getToken() async {
@@ -31,13 +31,13 @@ class DocumentApi {
         },
       );
       if (response.statusCode == 200) {
-        List<dynamic> documentsJson = json.decode(response.body);
+        final decodedBody = utf8.decode(response.bodyBytes);
+        List<dynamic> documentsJson = json.decode(decodedBody);
         return documentsJson.map((json) => Document.fromJson(json)).toList();
       } else {
         throw Exception('Failed to fetch passenger documents');
       }
     } catch (e) {
-      print(e);
       throw Exception('Error fetching passenger documents: $e');
     }
   }
@@ -60,8 +60,8 @@ class DocumentApi {
       );
 
       if (response.statusCode == 201) {
-        print("test_point");
-        return Document.fromJson(json.decode(response.body));
+        final decodedBody = utf8.decode(response.bodyBytes);
+        return Document.fromJson(json.decode(decodedBody));
       } else {
         throw Exception('Failed to add document');
       }
@@ -89,7 +89,8 @@ class DocumentApi {
       );
 
       if (response.statusCode == 200) {
-        return Document.fromJson(json.decode(response.body));
+        final decodedBody = utf8.decode(response.bodyBytes);
+        return Document.fromJson(json.decode(decodedBody));
       } else {
         throw Exception('Failed to update document');
       }

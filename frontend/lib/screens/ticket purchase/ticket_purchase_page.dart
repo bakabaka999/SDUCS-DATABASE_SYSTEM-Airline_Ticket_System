@@ -12,9 +12,9 @@ class FlightSearchPage extends StatefulWidget {
 }
 
 class _FlightSearchPageState extends State<FlightSearchPage> {
-  String _departureCityName = "Beijing";
+  String _departureCityName = "北京";
   String _departureCityCode = "BJS";
-  String _arrivalCityName = "Shanghai";
+  String _arrivalCityName = "上海";
   String _arrivalCityCode = "SHA";
   DateTime? _selectedDate = DateTime.now();
   String? _errorMessage;

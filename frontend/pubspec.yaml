@@ -31,7 +31,11 @@ dependencies:
   flutter:
     sdk: flutter
 
+  image_picker: ^0.8.7+4
+  
   http: ^0.13.3
+
+  http_parser: ^4.0.1
 
   lottie: ^2.0.0
 

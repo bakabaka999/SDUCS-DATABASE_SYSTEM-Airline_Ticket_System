@@ -10,6 +10,7 @@ class User {
   final String phoneNumber; // 用户手机号
   final double accumulatedMiles; // 用户累计里程
   final int ticketCount; // 用户购票次数
+  final String? avatarUrl; // 用户头像URL
 
   // 构造函数，用于初始化用户对象
   User({
@@ -19,6 +20,7 @@ class User {
     this.phoneNumber = '',
     this.accumulatedMiles = 0,
     this.ticketCount = 0,
+    this.avatarUrl, // 可为空
   });
 
   /// 将从后端获取到的JSON数据转换为User对象
@@ -30,6 +32,7 @@ class User {
       phoneNumber: json['phone_number'] ?? '', // 用户手机号（可能为空）
       accumulatedMiles: json['accumulated_miles'] ?? 0.0, // 累计里程
       ticketCount: json['ticked_count'] ?? 0, // 购票次数
+      avatarUrl: json['avatar_url'], // 从后端获取头像 URL
     );
   }
 
@@ -42,6 +45,7 @@ class User {
       'phone_number': phoneNumber, // 用户手机号
       'accumulated_miles': accumulatedMiles, // 累计里程
       'ticked_count': ticketCount, // 购票次数
+      'avatar_url': avatarUrl, // 用户头像 URL
     };
   }
 }

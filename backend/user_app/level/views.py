@@ -38,7 +38,7 @@ def get_user_level(request):
 
         return Response({
             "level": level_data,
-            "level_name": level.__str__(),
+            "level_name": dict(Level.LEVEL_CHOICES).get(user_level.level),
             "user_miles": user_miles,
             "user_tickets": user_tickets
         }, status=status.HTTP_200_OK)

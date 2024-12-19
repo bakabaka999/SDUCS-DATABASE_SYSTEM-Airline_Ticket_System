@@ -25,11 +25,8 @@ class _LevelPageState extends State<LevelPage> {
       final levelData = await _levelAPI.getUserLevel();
       final nextLevelData = await _levelAPI.getNextLevel();
 
-      print("Current Level Data: $levelData"); // 调试用
-      print("Next Level Data: $nextLevelData");
-
       setState(() {
-        _currentLevel = levelData['level']; // 只取 level 数据
+        _currentLevel = levelData; // 只取 level 数据
         _nextLevel = nextLevelData['next_level'] ?? null;
         _isLoading = false;
       });
@@ -82,8 +79,8 @@ class _LevelPageState extends State<LevelPage> {
   // 当前等级卡片
   Widget _buildCurrentLevelCard() {
     final levelName = _currentLevel?['level_name'] ?? '未知';
-    final userMiles = _currentLevel?['require_miles']?.toString() ?? '0';
-    final userTickets = _currentLevel?['require_tickets']?.toString() ?? '0';
+    final userMiles = _currentLevel?['user_miles']?.toString() ?? '0';
+    final userTickets = _currentLevel?['user_tickets']?.toString() ?? '0';
 
     return _buildGradientCard(
       title: "当前会员等级",

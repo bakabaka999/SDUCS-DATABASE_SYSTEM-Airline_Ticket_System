@@ -48,15 +48,10 @@
             padding: 20px;
         }
 
-        h1 {
+        h1, h2 {
             color: #34495e;
             font-weight: bold;
-            margin-bottom: 30px;
-        }
-
-        h2 {
-            margin-top: 30px;
-            color: #2c3e50;
+            margin-bottom: 20px;
         }
 
         /* 卡片样式 */
@@ -65,42 +60,17 @@
             color: white;
             padding: 20px;
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-            animation: float 3s ease-in-out infinite; /* 默认浮动动画 */
             transition: transform 0.3s ease, box-shadow 0.3s ease;
         }
 
         .stats-card:hover {
-            transform: translateY(-10px) scale(1.05); /* 悬停时上浮并放大 */
+            transform: translateY(-10px) scale(1.05);
             box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
         }
 
         .stats-card i {
             font-size: 32px;
             margin-right: 10px;
-        }
-
-        .stats-card h5 {
-            margin: 0;
-            font-size: 24px;
-            font-weight: bold;
-        }
-
-        .stats-card p {
-            margin: 0;
-            font-size: 16px;
-        }
-
-        /* 浮动动画 */
-        @keyframes float {
-            0% {
-                transform: translateY(0px);
-            }
-            50% {
-                transform: translateY(-8px);
-            }
-            100% {
-                transform: translateY(0px);
-            }
         }
 
         /* 图表区域 */
@@ -132,6 +102,22 @@
             display: none;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
         }
+
+        /* 返回 Admin 首页按钮 */
+        #back-to-admin {
+            position: fixed;
+            bottom: 30px;
+            left: 30px;
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            text-decoration: none;
+        }
     </style>
 </head>
 <body>
@@ -144,11 +130,10 @@
             <a class="nav-link" href="#overview"><i class="fas fa-chart-pie"></i> 数据概览</a>
             <a class="nav-link" href="#order-trend"><i class="fas fa-chart-line"></i> 订单趋势</a>
             <a class="nav-link" href="#revenue-trend"><i class="fas fa-chart-bar"></i> 每日收入</a>
-            <a class="nav-link" href="#order-status"><i class="fas fa-pie-chart"></i> 订单状态分布</a>
+            <a class="nav-link" href="#passenger-distribution"><i class="fas fa-user"></i> 乘客分布</a>
+            <a class="nav-link" href="#top-flights"><i class="fas fa-plane"></i> 热门航班</a>
+            <a class="nav-link" href="#user-activity"><i class="fas fa-users"></i> 用户购票频率</a>
         </nav>
-        <button id="back-to-top" title="返回顶部">
-            <i class="fas fa-arrow-up"></i>
-        </button>
     </div>
 
     <!-- 主体内容 -->
@@ -197,24 +182,36 @@
             <img src="{{ revenue_trend_chart }}" alt="每日收入趋势图">
         </div>
 
-        <div id="order-status" class="chart-container">
-            <h2>订单状态分布</h2>
-            <img src="{{ order_status_chart }}" alt="订单状态分布图">
+        <div id="passenger-distribution" class="chart-container">
+            <h2>乘客类型分布</h2>
+            <img src="{{ passenger_type_chart }}" alt="乘客类型分布图">
+        </div>
+
+        <div id="top-flights" class="chart-container">
+            <h2>热门航班收入统计</h2>
+            <img src="{{ top_flight_revenue_chart }}" alt="热门航班收入统计图">
+        </div>
+
+        <div id="user-activity" class="chart-container">
+            <h2>用户购票频率统计</h2>
+            <img src="{{ user_ticket_frequency_chart }}" alt="用户购票频率统计图">
         </div>
     </div>
 
-    <!-- 返回顶部按钮脚本 -->
+    <!-- 返回顶部按钮 -->
+    <button id="back-to-top" title="返回顶部">
+        <i class="fas fa-arrow-up"></i>
+    </button>
+
+    <!-- 返回 Admin 首页按钮 -->
+    <a href="/admin/" id="back-to-admin">返回管理首页</a>
+
+    <!-- 返回顶部逻辑 -->
     <script>
         const backToTopButton = document.getElementById('back-to-top');
-
         window.addEventListener('scroll', () => {
-            if (window.scrollY > 300) {
-                backToTopButton.style.display = 'block';
-            } else {
-                backToTopButton.style.display = 'none';
-            }
+            backToTopButton.style.display = window.scrollY > 300 ? 'block' : 'none';
         });
-
         backToTopButton.addEventListener('click', () => {
             window.scrollTo({ top: 0, behavior: 'smooth' });
         });

@@ -65,12 +65,9 @@ class SearchFlightView(APIView):
             )
 
         try:
-            print(departure_city_code, arrival_city_code, departure_date)
             # 查找起始城市和终点城市的所有机场
             departure_airports = Airport.objects.filter(city__city_code=departure_city_code)
-            print(departure_airports)
             arrival_airports = Airport.objects.filter(city__city_code=arrival_city_code)
-            print(arrival_airports)
 
             if not departure_airports.exists() or not arrival_airports.exists():
                 return Response(
@@ -87,8 +84,8 @@ class SearchFlightView(APIView):
             # 如果提供了起飞日期，则进一步筛选
             if departure_date:
                 try:
-                    # 转换日期字符串为 UTC 时间
-                    start_time = make_aware(datetime.strptime(departure_date, "%Y-%m-%d"))
+                    # 转换日期字符串为 naive datetime（不带时区）
+                    start_time = datetime.strptime(departure_date, "%Y-%m-%d")
                     end_time = start_time + timedelta(days=1)
 
                     # 直接过滤时间范围，避免 __date 失效
@@ -354,36 +351,16 @@ class ConfirmOrderView(APIView):
             with transaction.atomic():
                 flight = Flight.objects.select_for_update().get(flight_id=flight.flight_id)
 
-                # 确保有足够座位
-                if order.ticket.seat_type == "economy" and flight.remaining_economy_seats <= 0:
-                    return Response(
-                        {"error": "No available economy seats for this flight."},
-                        status=status.HTTP_400_BAD_REQUEST,
-                    )
-                elif order.ticket.seat_type == "business" and flight.remaining_business_seats <= 0:
-                    return Response(
-                        {"error": "No available business class seats for this flight."},
-                        status=status.HTTP_400_BAD_REQUEST,
-                    )
-                elif order.ticket.seat_type == "first_class" and flight.remaining_first_class_seats <= 0:
-                    return Response(
-                        {"error": "No available first class seats for this flight."},
-                        status=status.HTTP_400_BAD_REQUEST,
-                    )
-
                 # 更新订单状态和航班座位
                 order.status = "confirmed"  # 更新订单状态为已支付
                 order.save()
 
-                # 根据座位类型更新航班的座位信息
-                if order.ticket.seat_type == "economy":
-                    flight.remaining_economy_seats -= 1
-                elif order.ticket.seat_type == "business":
-                    flight.remaining_business_seats -= 1
-                elif order.ticket.seat_type == "first_class":
-                    flight.remaining_first_class_seats -= 1
-
                 flight.save()
+
+            # 当付款成功时，计算用户累计里程数与购票数
+            user.accumulated_miles += flight.distance
+            user.ticked_count += 1
+            user.save()
 
             return Response(
                 {"message": "Order confirmed successfully.", "order_id": order.order_id, "status": order.status},
@@ -489,6 +466,14 @@ class CancelOrderView(APIView):
                     order.status = 'canceled'
                     order.refund_amount = None
                     order.refund_time = None
+                    # 退还座位
+                    flight = order.ticket.flight
+                    if order.ticket.seat_type == 'economy':
+                        flight.remaining_economy_seats += 1
+                    elif order.ticket.seat_type == 'business':
+                        flight.remaining_business_seats += 1
+                    elif order.ticket.seat_type == 'first_class':
+                        flight.remaining_first_class_seats += 1
                     order.save()
 
                 else:

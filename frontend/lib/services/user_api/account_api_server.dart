@@ -1,5 +1,8 @@
 import 'dart:convert';
+import 'dart:io';
 import 'package:http/http.dart' as http;
+import 'package:http_parser/http_parser.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../models/user.dart';
 import '../../models/passenger.dart';
@@ -7,10 +10,9 @@ import '../../models/involve.dart';
 
 class UserAPI {
   // 后端API的基准url
-  // final String apiUrl = "http://localhost:8000/user/account/";
-  final String apiUrl = "http://159.75.132.182:8000/user/account/";
+  final String apiUrl = "http://localhost:8000/user/account/";
+  // final String apiUrl = "http://159.75.132.182:8000/user/account/";
 
-  
   // 用户登录接口
   /// 用户登录。传递用户名和密码，返回登录信息
   Future<Map<String, dynamic>> login(String username, String password) async {
@@ -91,7 +93,6 @@ class UserAPI {
   /// 获取当前登录用户的信息
   Future<User> getUserProfile(String token) async {
     try {
-      print(token);
       final response = await http.get(
         Uri.parse(apiUrl + 'profile/'),
         headers: {
@@ -100,12 +101,49 @@ class UserAPI {
         },
       );
       if (response.statusCode == 200) {
-        return User.fromJson(json.decode(response.body)); // 解析用户数据
+        final decodedBody = utf8.decode(response.bodyBytes);
+        print(decodedBody.toString());
+        return User.fromJson(json.decode(decodedBody)); // 解析用户数据
       } else {
         throw Exception('Failed to load user profile: ${response.statusCode}');
       }
     } catch (e) {
       throw Exception('Error fetching user profile: $e');
+    }
+  }
+
+  // 上传用户头像接口
+  /// 修改当前登录用户的头像
+  Future<String> uploadAvatar(String token, XFile imageFile) async {
+    try {
+      // 读取文件的字节流
+      List<int> imageBytes = await imageFile.readAsBytes();
+
+      var request = http.MultipartRequest(
+        'POST',
+        Uri.parse(apiUrl + 'profile/avatar/'),
+      );
+      request.headers['Authorization'] = 'Token $token';
+      request.files.add(
+        http.MultipartFile.fromBytes(
+          'avatar',
+          imageBytes,
+          filename: imageFile.name, // 指定文件名
+          contentType: MediaType('image', 'jpeg'), // 设置文件类型
+        ),
+      );
+
+      var streamedResponse = await request.send();
+      var response = await http.Response.fromStream(streamedResponse);
+
+      if (response.statusCode == 200) {
+        final decodedBody = json.decode(response.body);
+        return decodedBody['avatar_url']; // 返回新的头像 URL
+      } else {
+        throw Exception('Failed to upload avatar: ${response.statusCode}');
+      }
+    } catch (e) {
+      throw Exception('Error uploading avatar: $e');
     }
   }
 
@@ -133,7 +171,8 @@ class UserAPI {
 
       if (response.statusCode == 200) {
         // 成功时返回更新后的用户信息
-        return User.fromJson(json.decode(response.body));
+        final decodedBody = utf8.decode(response.bodyBytes);
+        return User.fromJson(json.decode(decodedBody));
       } else {
         throw Exception(
             'Failed to update user profile. Status code: ${response.statusCode}');
@@ -156,7 +195,8 @@ class UserAPI {
       );
 
       if (response.statusCode == 200) {
-        List<dynamic> passengersJson = json.decode(response.body);
+        final decodedBody = utf8.decode(response.bodyBytes);
+        List<dynamic> passengersJson = json.decode(decodedBody);
         return passengersJson.map((json) => Passenger.fromJson(json)).toList();
       } else {
         throw Exception('Failed to fetch passengers');
@@ -181,7 +221,8 @@ class UserAPI {
       );
 
       if (response.statusCode == 201) {
-        return json.decode(response.body);
+        final decodedBody = utf8.decode(response.bodyBytes);
+        return json.decode(decodedBody);
       } else {
         throw Exception('Error adding passenger');
       }
@@ -204,7 +245,8 @@ class UserAPI {
       );
 
       if (response.statusCode == 200) {
-        return json.decode(response.body);
+        final decodedBody = utf8.decode(response.bodyBytes);
+        return json.decode(decodedBody);
       } else {
         throw Exception('Passenger not found');
       }
@@ -228,7 +270,8 @@ class UserAPI {
       );
 
       if (response.statusCode == 200) {
-        return json.decode(response.body);
+        final decodedBody = utf8.decode(response.bodyBytes);
+        return json.decode(decodedBody);
       } else {
         throw Exception('Passenger not found or invalid data');
       }
@@ -277,6 +320,7 @@ class UserAPI {
       );
 
       if (response.statusCode == 200) {
+        final decodedBody = utf8.decode(response.bodyBytes);
         return json.decode(response.body);
       } else {
         throw Exception('Invalid certification type');
@@ -324,12 +368,32 @@ class UserAPI {
       );
 
       if (response.statusCode == 200) {
-        return json.decode(response.body);
+        final decodedBody = utf8.decode(response.bodyBytes);
+        return json.decode(decodedBody);
       } else {
         throw Exception('Logout failed');
       }
     } catch (e) {
       throw Exception('Error logging out: $e');
+    }
+  }
+
+  Future<void> updateUserAvatar(String token, File avatarFile) async {
+    // 构造 URL
+    final url = Uri.parse('$apiUrl/api/user/avatar/');
+
+    // 创建 Multipart 请求
+    final request = http.MultipartRequest('POST', url)
+      ..headers['Authorization'] = 'Bearer $token' // 添加认证头
+      ..files.add(
+          await http.MultipartFile.fromPath('avatar', avatarFile.path)); // 添加文件
+
+    // 发送请求
+    final response = await request.send();
+
+    // 处理响应
+    if (response.statusCode != 200) {
+      throw Exception('头像上传失败: ${response.statusCode}');
     }
   }
 }

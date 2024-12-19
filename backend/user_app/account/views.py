@@ -1,6 +1,10 @@
+import os
+
+from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
 from rest_framework import status
 from rest_framework.exceptions import AuthenticationFailed
+from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated, AllowAny
@@ -388,7 +392,6 @@ def change_password(request):
     else:
         return Response({"error": "Old password is incorrect."}, status=status.HTTP_400_BAD_REQUEST)
 
-    return Response({"message": "Password updated successfully."}, status=status.HTTP_200_OK)
 
 # 退出登录视图：用户可以退出登录
 @api_view(['POST'])
@@ -404,3 +407,38 @@ def logout_view(request):
     except Exception as e:
         return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
+
+class UploadAvatarView(APIView):
+    parser_classes = (MultiPartParser, FormParser)
+
+    @staticmethod
+    def post(request, *args, **kwargs):
+        try:
+            user = request.user
+            if not user.is_authenticated:
+                return Response({'error': '用户未登录'}, status=status.HTTP_401_UNAUTHORIZED)
+            user = User.objects.get(name=user.username)
+
+            # 检查是否上传了头像文件
+            new_avatar = request.FILES.get('avatar')
+            if not new_avatar:
+                return Response({'error': '请提供头像文件'}, status=status.HTTP_400_BAD_REQUEST)
+
+            # 删除旧头像（如果存在且是用户上传的头像）
+            if user.avatar and user.avatar.name != 'avatars/default_avatar.png':
+                old_avatar_path = os.path.join(settings.MEDIA_ROOT, str(user.avatar))
+                if os.path.exists(old_avatar_path):
+                    os.remove(old_avatar_path)
+
+            # 保存新头像
+            user.avatar = new_avatar
+            user.save()
+
+            # 返回新的头像 URL
+            return Response({
+                'message': '头像上传成功',
+                'avatar_url': request.build_absolute_uri(user.avatar.url)
+            }, status=status.HTTP_200_OK)
+
+        except Exception as e:
+            return Response({'error': f'发生错误: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

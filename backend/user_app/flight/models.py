@@ -4,7 +4,7 @@ from django.db import models
 from django.utils.timezone import is_aware, make_aware
 from pypinyin import pinyin, Style
 
-from user_app.account.models import Passenger
+from user_app.account.models import Passenger, User, UserPassengerRelation
 
 
 # Create your models here.
@@ -127,12 +127,11 @@ class Order(models.Model):
         """
         判断订单是否可以取消（航班未起飞且未取消或退款）。
         """
-        current_time = datetime.now()  # 使用 offset-naive 的当前时间
+        current_time = datetime.now()  # 使用 naive 的当前时间
 
-        # 如果航班的时间是 offset-aware，将当前时间也转换为 offset-aware
         if is_aware(self.ticket.flight.departure_time):
-            current_time = make_aware(current_time)
-
+            # 这一行不再需要，因为禁用时区后，不能使用 make_aware
+            pass
         if self.ticket.flight.departure_time > current_time and self.status in ['confirmed']:
             return True
         return False
@@ -145,7 +144,7 @@ class Order(models.Model):
             raise ValueError("Order cannot be canceled.")
 
         # 更新订单状态和退款信息
-        self.status = 'canceled'
+        self.status = 'refunded'
         self.refund_amount = self.total_price * 0.8  # 假设退款金额为 80%
         self.refund_time = datetime.now()  # 使用 offset-naive 的当前时间
         self.save()
@@ -159,7 +158,16 @@ class Order(models.Model):
         elif self.ticket.seat_type == 'first_class':
             flight.remaining_first_class_seats += 1
 
+        # 修改用户里程数与购票次数
+        user = User.objects.get(
+            id=UserPassengerRelation.objects.get(passenger=self.passenger).user_id
+        )
+        user.accumulated_miles -= self.ticket.flight.distance
+        user.ticked_count -= 1
+        print("test_here")
+        user.save()
         flight.save()
+
 
     def save(self, *args, **kwargs):
         # 验证乘客类型与机票类型是否匹配

@@ -1,4 +1,6 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:frontend/common/token_manager.dart';
 import 'package:frontend/screens/user%20action/change_password.dart';
 import 'package:frontend/services/user_api/account_api_server.dart';
@@ -19,8 +21,7 @@ class _UserInfoPageState extends State<UserInfoPage> {
   final _phoneController = TextEditingController();
 
   Future<User> _getUserProfile() async {
-    String? token = TokenManager.getToken();
-    print(token);
+    String? token = await TokenManager.getToken();
     if (token == null) {
       throw Exception('未找到Token');
     }
@@ -52,7 +53,7 @@ class _UserInfoPageState extends State<UserInfoPage> {
       );
 
       setState(() {
-        _userProfile = Future.value(updatedUser); // 更新数据
+        _userProfile = Future.value(updatedUser);
         _isEditing = false;
       });
 
@@ -66,6 +67,38 @@ class _UserInfoPageState extends State<UserInfoPage> {
     }
   }
 
+  Future<void> _uploadAvatar() async {
+    final picker = ImagePicker();
+    final pickedFile = await picker.pickImage(source: ImageSource.gallery);
+
+    if (pickedFile != null) {
+      String? token = await TokenManager.getToken();
+
+      if (token == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("未登录，请重新登录")),
+        );
+        return;
+      }
+
+      try {
+        String newAvatarUrl = await UserAPI().uploadAvatar(token, pickedFile);
+        setState(() {
+          _userProfile = _getUserProfile(); // 重新加载用户信息
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("头像上传成功")),
+        );
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("上传失败: $e")),
+        );
+      }
+    }
+  }
+
+
+
   @override
   void initState() {
     super.initState();
@@ -76,11 +109,6 @@ class _UserInfoPageState extends State<UserInfoPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.teal.shade50,
-      // appBar: AppBar(
-      //   title: Text('个人信息'),
-      //   flexibleSpace: _buildGradientHeader(),
-      //   centerTitle: true,
-      // ),
       body: FutureBuilder<User>(
         future: _userProfile,
         builder: (context, snapshot) {
@@ -88,35 +116,23 @@ class _UserInfoPageState extends State<UserInfoPage> {
             return Center(child: CircularProgressIndicator());
           } else if (snapshot.hasError) {
             return Center(child: Text('加载失败: ${snapshot.error}'));
-          } else {
+          } else if (snapshot.hasData) {
             _initializeUser(snapshot.data!);
-            return _buildUserInfoContent();
+            return _buildUserInfoContent(snapshot.data!);
+          } else {
+            return Center(child: Text('未能加载用户信息'));
           }
         },
       ),
     );
   }
 
-  // 渐变AppBar背景
-  Widget _buildGradientHeader() {
-    return Container(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [Colors.teal.shade600, Colors.teal.shade300],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-      ),
-    );
-  }
-
-  // 主体内容
-  Widget _buildUserInfoContent() {
+  Widget _buildUserInfoContent(User user) {
     return SingleChildScrollView(
       child: Column(
         children: [
           SizedBox(height: 20),
-          _buildUserAvatar(),
+          _buildUserAvatar(user), // 动态显示头像
           SizedBox(height: 30),
           _buildUserInfoField("用户名", _nameController),
           _buildUserInfoField("邮箱", _emailController),
@@ -129,25 +145,25 @@ class _UserInfoPageState extends State<UserInfoPage> {
     );
   }
 
-  // 用户头像区域
-  Widget _buildUserAvatar() {
+  Widget _buildUserAvatar(User user) {
     return Stack(
       alignment: Alignment.center,
       children: [
         CircleAvatar(
           radius: 80,
+          backgroundImage: user.avatarUrl != null && user.avatarUrl!.isNotEmpty
+              ? NetworkImage("http://127.0.0.1:8000${user.avatarUrl}") // 使用网络图片加载头像
+              : null, // 如果没有头像 URL，则显示默认样式
           backgroundColor: Colors.teal.shade100,
-          child: Icon(Icons.person, size: 80, color: Colors.white),
+          child: user.avatarUrl == null || user.avatarUrl!.isEmpty
+              ? Icon(Icons.person, size: 80, color: Colors.white) // 默认图标
+              : null,
         ),
         Positioned(
           bottom: 10,
           right: 10,
           child: GestureDetector(
-            onTap: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('暂不支持修改头像')),
-              );
-            },
+            onTap: _uploadAvatar,
             child: Container(
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
@@ -162,7 +178,7 @@ class _UserInfoPageState extends State<UserInfoPage> {
     );
   }
 
-  // 输入字段
+
   Widget _buildUserInfoField(String label, TextEditingController controller) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
@@ -187,14 +203,12 @@ class _UserInfoPageState extends State<UserInfoPage> {
     );
   }
 
-  // 按钮区域
   Widget _buildActionButtons() {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
       children: [
         ElevatedButton.icon(
           onPressed: () {
-            // 跳转到修改密码页面
             Navigator.push(
               context,
               MaterialPageRoute(builder: (_) => ChangePasswordPage()),
@@ -213,10 +227,8 @@ class _UserInfoPageState extends State<UserInfoPage> {
         ElevatedButton.icon(
           onPressed: () {
             if (_isEditing) {
-              // 保存用户信息
               _saveUserProfile();
             } else {
-              // 进入编辑模式
               setState(() {
                 _isEditing = true;
               });
@@ -238,5 +250,4 @@ class _UserInfoPageState extends State<UserInfoPage> {
       ],
     );
   }
-
 }

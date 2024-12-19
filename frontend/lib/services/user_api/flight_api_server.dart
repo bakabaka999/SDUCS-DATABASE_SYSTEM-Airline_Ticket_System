@@ -5,8 +5,8 @@ import '../../models/ticket.dart';
 import '../../models/order.dart';
 
 class FlightAPI {
-  // final String apiUrl = "http://localhost:8000/user/flight";
-  final String apiUrl = "http://159.75.132.182:8000/user/flight";
+  final String apiUrl = "http://localhost:8000/user/flight";
+  // final String apiUrl = "http://159.75.132.182:8000/user/flight";
 
   // 获取所有城市列表
   Future<List<dynamic>> fetchCities(String token, {String? query}) async {
@@ -20,7 +20,8 @@ class FlightAPI {
         },
       );
       if (response.statusCode == 200) {
-        return json.decode(response.body);
+        final decodedBody = utf8.decode(response.bodyBytes);
+        return json.decode(decodedBody);
       } else {
         throw Exception("Failed to load cities: ${response.statusCode}");
       }
@@ -49,7 +50,8 @@ class FlightAPI {
       );
 
       if (response.statusCode == 200) {
-        List<dynamic> data = json.decode(response.body);
+        final decodedBody = utf8.decode(response.bodyBytes);
+        List<dynamic> data = json.decode(decodedBody);
         return data.map((json) => Flight.fromJson(json)).toList();
       } else if (response.statusCode == 404) {
         // 检查后端返回的 message
@@ -82,14 +84,15 @@ class FlightAPI {
     );
 
     if (response.statusCode == 200) {
-      final data = json.decode(response.body);
+      final decodedBody = utf8.decode(response.bodyBytes);
+      final data = json.decode(decodedBody);
       return {
         "min_price": data['min_price'],
         "seat_type": data['seat_type'],
       };
     } else if (response.statusCode == 404) {
-      final data = json.decode(response.body);
-      print(data['message']); // 打印错误信息
+      final decodedBody = utf8.decode(response.bodyBytes);
+      final data = json.decode(decodedBody);
       return null; // 未找到票价
     } else {
       throw Exception("Failed to fetch minimum ticket price and seat type");
@@ -107,7 +110,8 @@ class FlightAPI {
         },
       );
       if (response.statusCode == 200) {
-        List<dynamic> data = json.decode(response.body);
+        final decodedBody = utf8.decode(response.bodyBytes);
+        List<dynamic> data = json.decode(decodedBody);
         return data.map((json) => Ticket.fromJson(json)).toList();
       } else {
         throw Exception(
@@ -135,7 +139,8 @@ class FlightAPI {
       );
 
       if (response.statusCode == 201) {
-        return Order.fromJson(json.decode(response.body));
+        final decodedBody = utf8.decode(response.bodyBytes);
+        return Order.fromJson(json.decode(decodedBody));
       } else {
         throw Exception("Failed to purchase ticket: ${response.statusCode}");
       }
@@ -175,7 +180,8 @@ class FlightAPI {
         },
       );
       if (response.statusCode == 200) {
-        List<dynamic> data = json.decode(response.body);
+        final decodedBody = utf8.decode(response.bodyBytes);
+        List<dynamic> data = json.decode(decodedBody);
         return data.map((json) => Order.fromJson(json)).toList();
       } else {
         throw Exception("Failed to fetch user orders: ${response.statusCode}");
@@ -195,7 +201,8 @@ class FlightAPI {
         },
       );
       if (response.statusCode == 200) {
-        return Order.fromJson(json.decode(response.body));
+        final decodedBody = utf8.decode(response.bodyBytes);
+        return Order.fromJson(json.decode(decodedBody));
       } else {
         throw Exception("Failed to fetch order detail: ${response.statusCode}");
       }
