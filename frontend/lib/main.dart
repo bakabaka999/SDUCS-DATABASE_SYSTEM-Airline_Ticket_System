@@ -15,7 +15,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Flutter API Integration',
+      title: '航空售票管理系统',
       theme: ThemeData(
         fontFamily: null, // 使用系统默认字体
         primarySwatch: Colors.blue,

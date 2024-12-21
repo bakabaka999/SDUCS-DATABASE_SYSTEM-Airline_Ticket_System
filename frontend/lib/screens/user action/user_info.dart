@@ -150,9 +150,9 @@ class _UserInfoPageState extends State<UserInfoPage> {
       alignment: Alignment.center,
       children: [
         CircleAvatar(
-          radius: 80,
+          radius: 140,
           backgroundImage: user.avatarUrl != null && user.avatarUrl!.isNotEmpty
-              ? NetworkImage("http://127.0.0.1:8000${user.avatarUrl}") // 使用网络图片加载头像
+              ? NetworkImage("http://159.75.132.182:8000${user.avatarUrl}") // 使用网络图片加载头像
               : null, // 如果没有头像 URL，则显示默认样式
           backgroundColor: Colors.teal.shade100,
           child: user.avatarUrl == null || user.avatarUrl!.isEmpty
@@ -221,7 +221,7 @@ class _UserInfoPageState extends State<UserInfoPage> {
           icon: Icon(Icons.lock, color: Colors.white),
           label: Text(
             "修改密码",
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold,color: Colors.white),
           ),
         ),
         ElevatedButton.icon(
@@ -244,7 +244,7 @@ class _UserInfoPageState extends State<UserInfoPage> {
           ),
           label: Text(
             _isEditing ? "保存" : "编辑",
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold,color: Colors.white),
           ),
         ),
       ],

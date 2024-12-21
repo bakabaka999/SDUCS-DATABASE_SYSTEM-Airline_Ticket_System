@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:frontend/common/token_manager.dart';
 import 'package:frontend/models/order.dart';
 import 'package:frontend/services/user_api/flight_api_server.dart';
+import 'package:frontend/screens/ticket purchase/payment_page.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'order_detail_page.dart';
 
@@ -62,107 +63,130 @@ class _OrderManagementPageState extends State<OrderManagementPage> {
   }
 
   // 订单项组件（美化版）
-  Widget _buildOrderItem(Order order) {
-    return Card(
-      margin: EdgeInsets.symmetric(vertical: 8, horizontal: 12),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      elevation: 5,
-      child: Padding(
-        padding: const EdgeInsets.all(12.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // 标题行：订单号和状态
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  "订单号: ${order.orderId}",
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                ),
-                Chip(
-                  label: Text(
-                    order.status == "pending"
-                        ? "待支付"
-                        : order.status == "confirmed"
-                            ? "已确认"
-                            : order.status == "canceled"
-                                ? "已取消"
-                                : "已退款",
-                  ),
-                  backgroundColor: order.status == "pending"
-                      ? Colors.orange.shade100
+Widget _buildOrderItem(Order order) {
+  return Card(
+    margin: EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+    elevation: 5,
+    child: Padding(
+      padding: const EdgeInsets.all(12.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // 标题行：订单号和状态
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                "订单号: ${order.orderId}",
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+              ),
+              Chip(
+                label: Text(
+                  order.status == "pending"
+                      ? "待支付"
                       : order.status == "confirmed"
-                          ? Colors.green.shade100
-                          : Colors.grey.shade300,
+                          ? "已确认"
+                          : order.status == "canceled"
+                              ? "已取消"
+                              : "已退款",
                 ),
-              ],
-            ),
-            Divider(),
-            // 航班信息和支付金额
-            Row(
-              children: [
-                Icon(Icons.flight_takeoff, color: Colors.teal, size: 24),
-                SizedBox(width: 8),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      "航班: ${order.flight?['departure_airport']} → ${order.flight?['arrival_airport']}",
-                      style: TextStyle(fontSize: 14, color: Colors.black87),
+                backgroundColor: order.status == "pending"
+                    ? Colors.orange.shade100
+                    : order.status == "confirmed"
+                        ? Colors.green.shade100
+                        : Colors.grey.shade300,
+              ),
+            ],
+          ),
+          Divider(),
+          // 航班信息和支付金额
+          Row(
+            children: [
+              Icon(Icons.flight_takeoff, color: Colors.teal, size: 24),
+              SizedBox(width: 8),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    "航班: ${order.flight?['departure_airport']} → ${order.flight?['arrival_airport']}",
+                    style: TextStyle(fontSize: 14, color: Colors.black87),
+                  ),
+                  Text(
+                    "起飞时间: ${order.flight?['departure_time']}",
+                    style: TextStyle(fontSize: 14, color: Colors.grey),
+                  ),
+                ],
+              ),
+              Spacer(),
+              Text(
+                "￥${order.totalPrice.toStringAsFixed(2)}",
+                style: TextStyle(
+                    fontSize: 18,
+                    color: Colors.orange,
+                    fontWeight: FontWeight.bold),
+              ),
+            ],
+          ),
+          SizedBox(height: 8),
+          // 操作按钮
+          Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              TextButton(
+                onPressed: () async {
+                  final detail = await FlightAPI()
+                      .fetchOrderDetail(_token, order.orderId);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) =>
+                          OrderDetailPage(orderDetail: detail),
                     ),
-                    Text(
-                      "起飞时间: ${order.flight?['departure_time']}",
-                      style: TextStyle(fontSize: 14, color: Colors.grey),
-                    ),
-                  ],
+                  );
+                },
+                child: Text("查看详情"),
+              ),
+              SizedBox(width: 8),
+              if (order.status == 'pending' || order.status == 'confirmed')
+                ElevatedButton(
+                  onPressed: () => _cancelOrder(order.orderId),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.redAccent,
+                    foregroundColor: Colors.white,
+                  ),
+                  child: Text("取消订单"),
                 ),
-                Spacer(),
-                Text(
-                  "￥${order.totalPrice.toStringAsFixed(2)}",
-                  style: TextStyle(
-                      fontSize: 18,
-                      color: Colors.orange,
-                      fontWeight: FontWeight.bold),
-                ),
-              ],
-            ),
-            SizedBox(height: 8),
-            // 操作按钮
-            Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                TextButton(
-                  onPressed: () async {
-                    final detail = await FlightAPI()
-                        .fetchOrderDetail(_token, order.orderId);
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) =>
-                            OrderDetailPage(orderDetail: detail),
-                      ),
-                    );
-                  },
-                  child: Text("查看详情"),
-                ),
-                SizedBox(width: 8),
-                if (order.status == 'pending' || order.status == 'confirmed')
+              SizedBox(width: 8),
+              // 添加去支付按钮
+              if (order.status == 'pending')
                   ElevatedButton(
-                    onPressed: () => _cancelOrder(order.orderId),
+                    onPressed: () {
+                      // 使用 Navigator.push 并监听返回的结果
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => PaymentPage(order: order),
+                        ),
+                      ).then((_) {
+                        // 当支付页面返回时，调用刷新方法
+                        _loadOrders(status: _currentStatus);
+                      });
+                    },
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.redAccent,
+                      backgroundColor: Colors.blue,
                       foregroundColor: Colors.white,
                     ),
-                    child: Text("取消订单"),
+                    child: Text("去支付"),
                   ),
-              ],
-            )
-          ],
-        ),
+
+            ],
+          )
+        ],
       ),
-    );
-  }
+    ),
+  );
+}
 
   // 筛选按钮组件
   Widget _buildFilterButton(String label, String? status) {
@@ -181,10 +205,6 @@ class _OrderManagementPageState extends State<OrderManagementPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.grey.shade100,
-      // appBar: AppBar(
-      //   title: Text("订单管理"),
-      //   backgroundColor: Colors.teal,
-      // ),
       body: Column(
         children: [
           // 筛选按钮

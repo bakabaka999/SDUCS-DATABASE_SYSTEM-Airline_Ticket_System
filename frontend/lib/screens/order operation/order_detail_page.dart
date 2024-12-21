@@ -160,16 +160,16 @@ class OrderDetailPage extends StatelessWidget {
           ),
           child: Text("返回", style: TextStyle(color: Colors.white)),
         ),
-        ElevatedButton(
-          onPressed: () {
-            print("取消订单: ${orderDetail.orderId}");
-          },
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.red,
-            padding: EdgeInsets.symmetric(horizontal: 32, vertical: 12),
-          ),
-          child: Text("取消订单", style: TextStyle(color: Colors.white)),
-        ),
+        // ElevatedButton(
+        //   onPressed: () {
+        //     print("取消订单: ${orderDetail.orderId}");
+        //   },
+        //   style: ElevatedButton.styleFrom(
+        //     backgroundColor: Colors.red,
+        //     padding: EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+        //   ),
+        //   child: Text("取消订单", style: TextStyle(color: Colors.white)),
+        // ),
       ],
     );
   }

@@ -4,6 +4,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../services/user_api/account_api_server.dart';
 import 'register.dart';
 import '../main_page.dart';
+import 'ground.dart';
+
 
 class LoginPage extends StatefulWidget {
   @override
@@ -16,6 +18,7 @@ class _LoginPageState extends State<LoginPage> {
   final _formKey = GlobalKey<FormState>();
   bool _isLoading = false;
   String _errorMessage = '';
+
 
   @override
   void initState() {
@@ -79,50 +82,49 @@ class _LoginPageState extends State<LoginPage> {
     );
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.teal.shade50,
-      body: SingleChildScrollView(
-        child: Container(
-          height: MediaQuery.of(context).size.height,
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              _buildHeader(),
-              SizedBox(height: 20),
-              _buildLoginForm(),
-              SizedBox(height: 10),
-              if (_errorMessage.isNotEmpty)
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20.0),
-                  child: Text(
-                    _errorMessage,
-                    style: TextStyle(
-                        color: Colors.red, fontWeight: FontWeight.w500),
+ @override
+Widget build(BuildContext context) {
+  return Scaffold(
+    backgroundColor: Colors.teal.shade50,
+    body: Stack(
+      children: [
+        // 背景动画层
+        Positioned.fill(
+          child: AnimatedBackground(), // 将动画作为底层背景
+        ),
+
+        // 页面内容层
+        SingleChildScrollView(
+          child: Container(
+            height: MediaQuery.of(context).size.height,
+            alignment: Alignment.center,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                _buildLoginForm(), // 登录表单
+                SizedBox(height: 10),
+                if (_errorMessage.isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20.0),
+                    child: Text(
+                      _errorMessage,
+                      style: TextStyle(
+                          color: Colors.red, fontWeight: FontWeight.w500),
+                    ),
                   ),
-                ),
-              SizedBox(height: 10),
-              TextButton(
-                onPressed: _goToRegisterPage,
-                child: Text(
-                  "没有账号？立即注册",
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.teal,
-                  ),
-                ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
-      ),
-    );
-  }
+      ],
+    ),
+  );
+}
 
-  Widget _buildHeader() {
-    return Column(
+ Widget _buildHeader() {
+  return Center( // 使用Center组件使Column居中
+    child: Column(
+      mainAxisAlignment: MainAxisAlignment.center, // 子组件在垂直方向上居中
       children: [
         Icon(Icons.airplanemode_active, size: 100, color: Colors.teal),
         Text(
@@ -138,32 +140,38 @@ class _LoginPageState extends State<LoginPage> {
           style: TextStyle(fontSize: 16, color: Colors.grey),
         ),
       ],
-    );
-  }
+    ),
+  );
+}
 
-  Widget _buildLoginForm() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 24.0),
+Widget _buildLoginForm() {
+  return Padding(
+    padding: const EdgeInsets.symmetric(horizontal: 24.0),
+    child: Center( // 使用Center组件使Card居中
       child: Card(
         elevation: 4,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
         ),
-        child: Padding(
+        child: Container(
+          constraints: BoxConstraints.tightFor(width: 400), // 设置卡片宽度的约束
           padding: const EdgeInsets.all(20.0),
           child: Form(
             key: _formKey,
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.center, // 设置子组件在水平方向上居中
               children: [
+                _buildHeader(), // 居中的头部
+                SizedBox(height: 40),
                 _buildTextField(
-                  controller: _usernameController,
-                  label: "用户名",
-                  icon: Icons.person,
-                  validator: (value) =>
-                      value == null || value.isEmpty ? "请输入用户名" : null,
-                ),
-                SizedBox(height: 20),
+   controller: _usernameController,
+  label: "用户名",
+  icon: Icons.person,
+  maxLength: 35, // 用户名最大长度
+  validator: (value) =>
+      value == null || value.isEmpty ? "请输入用户名" : null,
+),
+                SizedBox(height: 30),
                 _buildTextField(
                   controller: _passwordController,
                   label: "密码",
@@ -172,7 +180,8 @@ class _LoginPageState extends State<LoginPage> {
                   validator: (value) =>
                       value == null || value.isEmpty ? "请输入密码" : null,
                 ),
-                SizedBox(height: 30),
+                SizedBox(height: 80),
+
                 _isLoading
                     ? Center(
                         child: CircularProgressIndicator(color: Colors.teal))
@@ -194,32 +203,46 @@ class _LoginPageState extends State<LoginPage> {
                                   fontWeight: FontWeight.bold)),
                         ),
                       ),
+                SizedBox(height: 40),
+                TextButton(
+                  onPressed: _goToRegisterPage,
+                  child: Text(
+                    "没有账号？立即注册",
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.teal,
+                    ),
+                  ),
+                ),
               ],
             ),
           ),
         ),
       ),
-    );
-  }
-
-  Widget _buildTextField({
-    required TextEditingController controller,
-    required String label,
-    required IconData icon,
-    bool isPassword = false,
-    String? Function(String?)? validator,
-  }) {
-    return TextFormField(
-      controller: controller,
-      obscureText: isPassword,
-      decoration: InputDecoration(
-        labelText: label,
-        prefixIcon: Icon(icon, color: Colors.teal),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
+    ),
+  );
+}
+ Widget _buildTextField({
+  required TextEditingController controller,
+  required String label,
+  required IconData icon,
+  bool isPassword = false,
+  int? maxLength, // 保持为 int? 类型
+  String? Function(String?)? validator,
+}) {
+  return TextFormField(
+    controller: controller,
+    obscureText: isPassword,
+    decoration: InputDecoration(
+      labelText: label,
+      prefixIcon: Icon(icon, color: Colors.teal),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
       ),
-      validator: validator,
-    );
-  }
+    ),
+    maxLength: maxLength, // 这里 maxLength 应该是 int?
+    validator: validator,
+  );
+}
 }

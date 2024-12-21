@@ -14,9 +14,11 @@ class _AddPassengerPageState extends State<AddPassengerPage> {
   final _nameController = TextEditingController();
   final _phoneController = TextEditingController();
   final _emailController = TextEditingController();
-  final _conditionsController = TextEditingController();
+  // final _conditionsController = TextEditingController();
   final _birthDateController = TextEditingController();
   bool _gender = true; // 默认性别为男性
+
+  String? _selectedPersonType = "adult"; // 默认类型为成人
 
   @override
   Widget build(BuildContext context) {
@@ -127,12 +129,66 @@ class _AddPassengerPageState extends State<AddPassengerPage> {
           SizedBox(height: 15),
           _buildTextField("邮箱", _emailController, "请输入邮箱地址", true),
           SizedBox(height: 15),
-          _buildTextField(
-              "认证条件 (可选)", _conditionsController, "例如：学生、教师等", false),
+          /*_buildTextField(
+              "认证条件 (可选)", _conditionsController, "例如：学生、教师等", false),*/
+          _buildPersonTypeField(),
           SizedBox(height: 15),
           _buildDatePickerField(),
         ],
       ),
+    );
+  }
+
+  // 乘机人类型选择
+  Widget _buildPersonTypeField() {
+    return Row(
+      children: [
+        Text("乘机人类型 *: ", style: TextStyle(fontSize: 16)),
+        Row(
+          children: [
+            Radio(
+              value: "adult",
+              groupValue: _selectedPersonType,
+              onChanged: (String? value) {
+                setState(() {
+                  _selectedPersonType = value;
+                });
+              },
+            ),
+            Text("成人"),
+            Radio(
+              value: "student",
+              groupValue: _selectedPersonType,
+              onChanged: (String? value) {
+                setState(() {
+                  _selectedPersonType = value;
+                });
+              },
+            ),
+            Text("学生"),
+            Radio(
+              value: "teacher",
+              groupValue: _selectedPersonType,
+              onChanged: (String? value) {
+                setState(() {
+                  _selectedPersonType = value;
+                });
+              },
+            ),
+            Text("教师"),
+            Radio(
+              value: "senior",
+              groupValue: _selectedPersonType,
+              onChanged: (String? value) {
+                setState(() {
+                  _selectedPersonType = value;
+                });
+              },
+            ),
+            Text("老人"),
+          ],
+        ),
+      ],
     );
   }
 
@@ -250,9 +306,9 @@ class _AddPassengerPageState extends State<AddPassengerPage> {
     String name = _nameController.text;
     String phone = _phoneController.text;
     String email = _emailController.text;
-    String conditions = _conditionsController.text.isNotEmpty
-        ? _conditionsController.text
-        : "None";
+    // String conditions = _conditionsController.text.isNotEmpty
+    //     ? _conditionsController.text
+    //     : "None";
     String birthDate = _birthDateController.text.isNotEmpty
         ? _birthDateController.text
         : "1990-01-01"; // 默认日期
@@ -266,8 +322,9 @@ class _AddPassengerPageState extends State<AddPassengerPage> {
           'gender': _gender,
           'phone_number': phone,
           'email': email,
-          'conditions': conditions,
+          // 'conditions': conditions,
           'birth_date': birthDate,
+          'person_type': _selectedPersonType,
         };
         await userAPI.addPassenger(token, data);
         Navigator.pop(context);

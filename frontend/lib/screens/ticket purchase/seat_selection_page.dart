@@ -12,6 +12,7 @@ class SeatSelectionPage extends StatefulWidget {
   final String arrivalTime;
   final String departureAirport;
   final String arrivalAirport;
+  final String planeModel;
 
   const SeatSelectionPage({
     Key? key,
@@ -20,6 +21,7 @@ class SeatSelectionPage extends StatefulWidget {
     required this.arrivalTime,
     required this.departureAirport,
     required this.arrivalAirport,
+    required this.planeModel,
   }) : super(key: key);
 
   @override
@@ -66,7 +68,8 @@ class _SeatSelectionPageState extends State<SeatSelectionPage>
 
     return Scaffold(
       appBar: AppBar(
-        title: Text("选择舱位", style: TextStyle(fontWeight: FontWeight.bold)),
+        title: Text("选择舱位",
+            style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
         centerTitle: true,
         flexibleSpace: Container(
           decoration: BoxDecoration(
@@ -129,7 +132,7 @@ class _SeatSelectionPageState extends State<SeatSelectionPage>
           Align(
             alignment: Alignment.centerRight,
             child: Text(
-              "航班号: ${widget.flightId}  |  Airbus A380",
+              "航班号: ${widget.flightId}  |  ${widget.planeModel}",
               style: TextStyle(fontSize: 14, color: Colors.grey.shade700),
             ),
           ),

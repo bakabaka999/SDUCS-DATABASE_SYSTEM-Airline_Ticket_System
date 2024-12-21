@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:frontend/common/token_manager.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import '../../../models/passenger.dart';
 import '../../../models/document.dart';
 import '../../services/user_api/account_api_server.dart';
 import '../../services/user_api/document_api_server.dart';
+import 'package:frontend/screens/passenger%20action/add_passenger_page.dart';
 
 class SelectPassengerPage extends StatefulWidget {
   const SelectPassengerPage({Key? key}) : super(key: key);
@@ -60,51 +60,6 @@ class _SelectPassengerPageState extends State<SelectPassengerPage> {
       print(e);
       setState(() => _isLoadingDocuments = false);
     }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text("选择乘客", style: TextStyle(fontWeight: FontWeight.bold)),
-        centerTitle: true,
-        backgroundColor: Colors.teal,
-        actions: [
-          TextButton(
-            onPressed: selectedPassenger != null && selectedDocument != null
-                ? () {
-                    Navigator.pop(context, {
-                      "passenger": selectedPassenger,
-                      "document": selectedDocument,
-                    });
-                  }
-                : null,
-            child: Text(
-              "完成",
-              style: TextStyle(
-                color: selectedPassenger != null && selectedDocument != null
-                    ? Colors.white
-                    : Colors.grey.shade400,
-                fontSize: 16,
-              ),
-            ),
-          ),
-        ],
-      ),
-      body: _isLoadingPassengers
-          ? Center(child: CircularProgressIndicator(color: Colors.teal))
-          : Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildHeader("选择乘客"),
-                Expanded(child: _buildPassengerList()),
-                if (selectedPassenger != null) ...[
-                  _buildHeader("选择证件"),
-                  _buildDocumentList(),
-                ],
-              ],
-            ),
-    );
   }
 
   Widget _buildHeader(String title) {
@@ -223,6 +178,76 @@ class _SelectPassengerPageState extends State<SelectPassengerPage> {
           );
         },
       ),
+    );
+  }
+
+  Widget _buildAddPassengerButton() {
+    return ElevatedButton.icon(
+      onPressed: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => AddPassengerPage()),
+        ).then((_) => _fetchPassengers());
+      },
+      style: ElevatedButton.styleFrom(
+        backgroundColor: Colors.teal,
+        padding: EdgeInsets.symmetric(vertical: 14, horizontal: 20),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      ),
+      icon: Icon(Icons.add, color: Colors.white),
+      label: Text(
+        "添加新乘机人",
+        style: TextStyle(fontSize: 16, color: Colors.white),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text("选择乘客", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
+        centerTitle: true,
+        backgroundColor: Colors.teal,
+        actions: [
+          TextButton(
+            onPressed: selectedPassenger != null && selectedDocument != null
+                ? () {
+                    Navigator.pop(context, {
+                      "passenger": selectedPassenger,
+                      "document": selectedDocument,
+                    });
+                  }
+                : null,
+            child: Text(
+              "完成",
+              style: TextStyle(
+                color: selectedPassenger != null && selectedDocument != null
+                    ? Colors.white
+                    : Colors.grey.shade400,
+                fontSize: 16,
+              ),
+            ),
+          ),
+        ],
+      ),
+      body: _isLoadingPassengers
+          ? Center(child: CircularProgressIndicator(color: Colors.teal))
+          : Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildHeader("选择乘客"),
+                Expanded(child: _buildPassengerList()),
+                SizedBox(height: 20),
+                  _buildAddPassengerButton(),
+            
+                
+                if (selectedPassenger != null) ...[
+                  _buildHeader("选择证件"),
+                  _buildDocumentList(),
+                ],
+              ],
+            ),
     );
   }
 }

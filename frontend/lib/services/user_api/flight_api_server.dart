@@ -5,8 +5,8 @@ import '../../models/ticket.dart';
 import '../../models/order.dart';
 
 class FlightAPI {
-  final String apiUrl = "http://localhost:8000/user/flight";
-  // final String apiUrl = "http://159.75.132.182:8000/user/flight";
+  // final String apiUrl = "http://localhost:8000/user/flight";
+  final String apiUrl = "http://159.75.132.182:8000/user/flight";
 
   // 获取所有城市列表
   Future<List<dynamic>> fetchCities(String token, {String? query}) async {

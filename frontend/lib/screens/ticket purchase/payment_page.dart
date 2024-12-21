@@ -3,7 +3,10 @@ import 'package:frontend/common/token_manager.dart';
 import 'dart:async';
 import 'package:frontend/models/order.dart';
 import 'package:frontend/services/user_api/flight_api_server.dart';
+import 'package:frontend/screens/ticket purchase/payment_page.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+
 
 class PaymentPage extends StatelessWidget {
   final Order order;
@@ -15,7 +18,10 @@ class PaymentPage extends StatelessWidget {
     return Scaffold(
       backgroundColor: Colors.grey[100],
       appBar: AppBar(
-        title: Text("支付订单"),
+        title: Text(
+          "支付订单",
+        style:
+          TextStyle(color: Colors.white)),
         backgroundColor: Colors.teal,
         centerTitle: true,
         elevation: 0,

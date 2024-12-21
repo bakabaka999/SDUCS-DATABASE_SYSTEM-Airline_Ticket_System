@@ -245,8 +245,18 @@ class PurchaseTicketView(APIView):
                 passenger = Passenger.objects.select_for_update().get(id=passenger_id)
                 ticket = Ticket.objects.select_related("flight").get(ticket_id=ticket_id)
 
+                order = Order.objects.filter(ticket=ticket, passenger=passenger, status="confirmed").first()
+
+                if order:
+                    return Response(
+                        {"error": "You have already purchased this ticket."},
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
+
                 # 验证乘机人类型与机票类型匹配
-                if passenger.person_type != ticket.ticket_type:
+                if ticket.ticket_type == 'adult':
+                    pass
+                elif passenger.person_type != ticket.ticket_type:
                     return Response(
                         {
                             "error": f"Passenger type '{passenger.person_type}' does not match ticket type '{ticket.ticket_type}'."
@@ -452,7 +462,7 @@ class CancelOrderView(APIView):
                     )
 
                 # 判断订单状态
-                if order.status == 'confirmed':
+                if order.status == 'confirmed' or order.status == 'pending':
                     # 已支付订单逻辑：调用模型方法取消订单并计算退款
                     if not order.can_cancel():
                         return Response(
@@ -460,21 +470,6 @@ class CancelOrderView(APIView):
                             status=status.HTTP_400_BAD_REQUEST,
                         )
                     order.cancel_order()
-
-                elif order.status == 'pending':
-                    # 未支付订单逻辑：直接取消订单，无需退款且无需退还座位
-                    order.status = 'canceled'
-                    order.refund_amount = None
-                    order.refund_time = None
-                    # 退还座位
-                    flight = order.ticket.flight
-                    if order.ticket.seat_type == 'economy':
-                        flight.remaining_economy_seats += 1
-                    elif order.ticket.seat_type == 'business':
-                        flight.remaining_business_seats += 1
-                    elif order.ticket.seat_type == 'first_class':
-                        flight.remaining_first_class_seats += 1
-                    order.save()
 
                 else:
                     # 订单已取消或已退款

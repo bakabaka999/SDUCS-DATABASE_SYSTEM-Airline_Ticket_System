@@ -3,8 +3,8 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 class LevelAPI {
-  final String apiUrl = "http://localhost:8000/user/level/";
-  // final String apiUrl = "http://159.75.132.182:8000/user/level/";
+  // final String apiUrl = "http://localhost:8000/user/level/";
+  final String apiUrl = "http://159.75.132.182:8000/user/level/";
 
   // 获取用户等级
   Future<Map<String, dynamic>> getUserLevel() async {

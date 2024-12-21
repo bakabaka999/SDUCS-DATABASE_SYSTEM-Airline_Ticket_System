@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:frontend/services/user_api/account_api_server.dart';
+import 'ground.dart';
 
 class RegisterPage extends StatefulWidget {
   @override
@@ -58,37 +59,37 @@ class _RegisterPageState extends State<RegisterPage> {
   }
 
 
-  @override
+   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.teal.shade50,
-      // appBar: AppBar(
-      //   title: Text('注册'),
-      //   backgroundColor: Colors.teal,
-      //   centerTitle: true,
-      //   elevation: 0,
-      // ),
-      body: SingleChildScrollView(
-        child: Container(
+      body: Stack(
+      children: [
+        // 背景动画层
+        Positioned.fill(
+          child: AnimatedBackground(), // 将动画作为底层背景
+        ),
+       SingleChildScrollView(
+         child: Container(
           height: MediaQuery.of(context).size.height,
-          padding: EdgeInsets.symmetric(horizontal: 20.0, vertical: 30.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              _buildHeader(),
-              SizedBox(height: 20),
-              _buildRegisterForm(),
-              SizedBox(height: 10),
-              if (_errorMessage.isNotEmpty)
-                Text(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center, // 使列中的子组件垂直居中
+          children: [
+            _buildRegisterForm(),
+            SizedBox(height: 10),
+            if (_errorMessage.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: Text(
                   _errorMessage,
                   style: TextStyle(color: Colors.red),
                 ),
-              SizedBox(height: 10),
-              _buildLoginLink(),
-            ],
-          ),
+              ),
+          ],
         ),
+      ),
+      ),
+      ]
       ),
     );
   }
@@ -102,12 +103,12 @@ class _RegisterPageState extends State<RegisterPage> {
         Text(
           "创建您的账号",
           style: TextStyle(
-            fontSize: 24,
+            fontSize: 28,
             fontWeight: FontWeight.bold,
             color: Colors.teal.shade700,
           ),
         ),
-        SizedBox(height: 5),
+        
         Text(
           "快速注册，开启您的旅程",
           style: TextStyle(fontSize: 16, color: Colors.grey),
@@ -116,30 +117,33 @@ class _RegisterPageState extends State<RegisterPage> {
     );
   }
 
-  // 注册表单
   Widget _buildRegisterForm() {
-    return Card(
+  return Center(
+    
+    child: Card(
       elevation: 4,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
       ),
-      child: Padding(
+      child: Container(
+        width: 400, // 设置卡片宽度
+        // 移除高度设置，让高度自适应内容
         padding: const EdgeInsets.all(20.0),
         child: Form(
           key: _formKey,
           child: Column(
+            // 垂直方向上居中对齐
             children: [
-              _buildTextField(
-                controller: _usernameController,
-                label: "用户名",
-                icon: Icons.person,
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return "请输入用户名";
-                  }
-                  return null;
-                },
-              ),
+              _buildHeader(),
+              SizedBox(height: 20),
+               _buildTextField(
+   controller: _usernameController,
+  label: "用户名",
+  icon: Icons.person,
+  maxLength: 35, // 用户名最大长度
+  validator: (value) =>
+      value == null || value.isEmpty ? "请输入用户名" : null,
+),
               SizedBox(height: 15),
               _buildTextField(
                 controller: _emailController,
@@ -181,35 +185,35 @@ class _RegisterPageState extends State<RegisterPage> {
               ),
               SizedBox(height: 20),
               _isLoading
-                  ? CircularProgressIndicator(color: Colors.teal)
-                  : SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        onPressed: _register,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.teal,
-                          padding: EdgeInsets.symmetric(vertical: 14),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
+                     ? Center(
+                        child: CircularProgressIndicator(color: Colors.teal))
+                    : SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton(
+                          onPressed: _register,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.teal,
+                            padding: EdgeInsets.symmetric(vertical: 14),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
                           ),
-                        ),
-                        child: Text(
-                          "注册",
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                          ),
+                          child: Text("注册",
+                              style: TextStyle(
+                                  fontSize: 18,
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold)),
                         ),
                       ),
-                    ),
+              SizedBox(height: 10),
+              _buildLoginLink(),              
             ],
           ),
         ),
       ),
-    );
-  }
-
+    ),
+  );
+}
   // 返回登录的链接
   Widget _buildLoginLink() {
     return TextButton(
@@ -220,7 +224,7 @@ class _RegisterPageState extends State<RegisterPage> {
         "已有账号？去登录",
         style: TextStyle(
           fontSize: 16,
-          fontWeight: FontWeight.w600,
+          fontWeight: FontWeight.bold,
           color: Colors.teal,
         ),
       ),
@@ -233,6 +237,7 @@ class _RegisterPageState extends State<RegisterPage> {
     required String label,
     required IconData icon,
     bool isPassword = false,
+    int? maxLength, // 保持为 int? 类型
     TextInputType inputType = TextInputType.text,
     String? Function(String?)? validator,
   }) {
@@ -251,6 +256,7 @@ class _RegisterPageState extends State<RegisterPage> {
           borderRadius: BorderRadius.circular(12),
         ),
       ),
+       maxLength: maxLength,
       validator: validator,
     );
   }

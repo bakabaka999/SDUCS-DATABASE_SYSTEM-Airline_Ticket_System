@@ -2,9 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:frontend/common/token_manager.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../services/user_api/flight_api_server.dart';
 import '../../../models/flight.dart';
 import 'seat_selection_page.dart'; // 导入座位选择页面
+import 'dart:convert';
+import 'package:webview_flutter/webview_flutter.dart';
 
 class FlightResultsPage extends StatefulWidget {
   final String departureCode;
@@ -108,7 +111,7 @@ class _FlightResultsPageState extends State<FlightResultsPage>
       appBar: AppBar(
         title: Text(
           "航班列表 - ${widget.departureDate}",
-          style: TextStyle(fontWeight: FontWeight.bold),
+          style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
         ),
         centerTitle: true,
         flexibleSpace: Container(
@@ -143,7 +146,6 @@ class _FlightResultsPageState extends State<FlightResultsPage>
                           child: GestureDetector(
                             onTapDown: (_) => _controller.forward(),
                             onTapUp: (_) => _controller.reverse(),
-                            onTap: () => _navigateToSeatSelection(flight),
                             child: _buildFlightCard(flight, price, seatType),
                           ),
                         );
@@ -215,9 +217,54 @@ class _FlightResultsPageState extends State<FlightResultsPage>
                         TextStyle(fontSize: 16, color: Colors.grey.shade700)),
               ],
             ),
+            SizedBox(height: 20), // 增加间隔
+            _buildActionButtons(flight), // 新增按钮组
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildActionButtons(Flight flight) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.end,
+      children: [
+        TextButton(
+          onPressed: () => _navigateToSeatSelection(flight), // 去机场按钮的功能
+          child: Text(
+            "选舱位",
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
+          ),
+          style: TextButton.styleFrom(
+            backgroundColor: Colors.teal, // 按钮背景颜色
+            shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8)), // 按钮圆角
+          ),
+        ),
+
+        SizedBox(width: 20),
+        // 增加间隔
+        TextButton(
+          onPressed: () => _navigateToAirport(flight), // 去机场按钮的功能
+          child: Text(
+            "去机场",
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
+          ),
+          style: TextButton.styleFrom(
+            backgroundColor: Colors.teal, // 按钮背景颜色
+            shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8)), // 按钮圆角
+          ),
+        ),
+      ],
     );
   }
 
@@ -252,10 +299,51 @@ class _FlightResultsPageState extends State<FlightResultsPage>
           arrivalTime: flight.arrivalTime,
           departureAirport: flight.departureAirport,
           arrivalAirport: flight.arrivalAirport,
+          planeModel: flight.planeModel,
         ),
       ),
     );
   }
+
+void _navigateToAirport(Flight flight) async {
+  // 确保 departureAirport 不是 null
+  if ( flight.departureAirport.isEmpty) {
+    throw '出发机场信息缺失，无法导航到机场';
+  }
+
+  // URL 编码处理中文
+  String queryUrl = 'https://ditu.amap.com/search??query='+Uri.encodeComponent(flight.departureAirport);
+
+  // 检查 URL 格式并尝试打开
+  final Uri url = Uri.parse(queryUrl);
+  if (await canLaunchUrl(url)) {
+    await launchUrl(url, mode: LaunchMode.externalApplication);
+  } else {
+    throw '无法打开地图：$queryUrl';
+  }
+}
+
+  // void _navigateToAirport(Flight flight) {
+  //   // 确保 departureAirport 不是 null
+  //   if (flight.departureAirport.isEmpty) {
+  //     throw '出发机场信息缺失，无法导航到机场';
+  //   }
+
+  //   // 编码机场名称以确保URL的有效性
+  //   String encodedAirportName = Uri.encodeComponent(flight.departureAirport);
+
+  //   // 构建高德地图的URL
+  //   String mapUrl = 'https://ditu.amap.com/search?query=$encodedAirportName';
+
+  //   // 打开WebView页面
+  //   Navigator.push(
+  //     context,
+  //     MaterialPageRoute(
+  //       builder: (context) => AirportMapPage(
+  //           apiKey: '1202df2f381f322e9ddaec6d876791f1', mapUrl: mapUrl),
+  //     ),
+  //   );
+  // }
 
   String _convertSeatType(String seatType) {
     switch (seatType) {
@@ -268,5 +356,28 @@ class _FlightResultsPageState extends State<FlightResultsPage>
       default:
         return "未知舱位";
     }
+  }
+}
+
+class AirportMapPage extends StatelessWidget {
+  final String apiKey;
+  final String mapUrl;
+
+  const AirportMapPage({required this.apiKey, required this.mapUrl});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('机场地图'),
+      ),
+      body: WebView(
+        initialUrl: mapUrl,
+        javascriptMode: JavascriptMode.unrestricted,
+        onWebViewCreated: (WebViewController webViewController) {
+          // 这里可以添加更多的WebView配置和事件处理
+        },
+      ),
+    );
   }
 }

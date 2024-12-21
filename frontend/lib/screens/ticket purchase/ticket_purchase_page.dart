@@ -260,7 +260,7 @@ class _FlightSearchPageState extends State<FlightSearchPage> {
       child: ElevatedButton.icon(
         onPressed: _searchFlights,
         icon: Icon(Icons.search, color: Colors.white),
-        label: Text("查询航班", style: TextStyle(fontSize: 18)),
+        label: Text("查询航班", style: TextStyle(fontSize: 18,color: Colors.white)),
         style: ElevatedButton.styleFrom(
           backgroundColor: Colors.teal.shade600,
           padding: EdgeInsets.symmetric(vertical: 16),

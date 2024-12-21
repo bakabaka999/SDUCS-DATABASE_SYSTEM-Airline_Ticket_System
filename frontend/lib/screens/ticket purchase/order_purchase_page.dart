@@ -42,7 +42,7 @@ class _OrderPurchasePageState extends State<OrderPurchasePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text("确认订单", style: TextStyle(fontWeight: FontWeight.bold)),
+        title: Text("确认订单", style: TextStyle(fontWeight: FontWeight.bold,color: Colors.white)),
         centerTitle: true,
         flexibleSpace: Container(
           decoration: BoxDecoration(

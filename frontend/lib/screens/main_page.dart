@@ -31,7 +31,7 @@ class _MainPageState extends State<MainPage> {
       appBar: AppBar(
         title: Text(
           _pageTitles[_selectedIndex],
-          style: TextStyle(fontSize: 24, fontWeight: FontWeight.w700),
+          style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold,color: Colors.white),
         ),
         flexibleSpace: Container(
           decoration: BoxDecoration(
@@ -129,6 +129,7 @@ class _MainPageState extends State<MainPage> {
         });
       },
       child: AnimatedContainer(
+        width:300,
         duration: Duration(milliseconds: 300),
         margin: EdgeInsets.symmetric(vertical: 8, horizontal: 10),
         padding: EdgeInsets.symmetric(vertical: 12),
@@ -148,7 +149,7 @@ class _MainPageState extends State<MainPage> {
         child: Column(
           children: [
             Icon(icon,
-                size: 28,
+                size: 30,
                 color: isSelected ? Colors.white : Colors.grey.shade600),
             SizedBox(height: 5),
             Text(

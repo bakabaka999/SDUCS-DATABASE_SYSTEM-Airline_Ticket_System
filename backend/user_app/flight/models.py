@@ -132,7 +132,7 @@ class Order(models.Model):
         if is_aware(self.ticket.flight.departure_time):
             # 这一行不再需要，因为禁用时区后，不能使用 make_aware
             pass
-        if self.ticket.flight.departure_time > current_time and self.status in ['confirmed']:
+        if self.ticket.flight.departure_time > current_time and self.status in ['confirmed', 'pending']:
             return True
         return False
 
@@ -144,10 +144,14 @@ class Order(models.Model):
             raise ValueError("Order cannot be canceled.")
 
         # 更新订单状态和退款信息
-        self.status = 'refunded'
-        self.refund_amount = self.total_price * 0.8  # 假设退款金额为 80%
-        self.refund_time = datetime.now()  # 使用 offset-naive 的当前时间
-        self.save()
+        if self.status == 'confirmed':
+            self.status = 'refunded'
+            self.refund_amount = self.total_price * 0.8  # 假设退款金额为 80%
+            self.refund_time = datetime.now()  # 使用 offset-naive 的当前时间
+            self.save()
+        elif self.status == 'pending':
+            self.status = 'canceled'
+            self.save()
 
         # 退还座位
         flight = self.ticket.flight
@@ -158,20 +162,20 @@ class Order(models.Model):
         elif self.ticket.seat_type == 'first_class':
             flight.remaining_first_class_seats += 1
 
-        # 修改用户里程数与购票次数
-        user = User.objects.get(
-            id=UserPassengerRelation.objects.get(passenger=self.passenger).user_id
-        )
-        user.accumulated_miles -= self.ticket.flight.distance
-        user.ticked_count -= 1
-        print("test_here")
-        user.save()
-        flight.save()
+        if self.status == 'refunded':
+            # 修改用户里程数与购票次数
+            user = User.objects.get(
+                id=UserPassengerRelation.objects.get(passenger=self.passenger).user_id
+            )
+            user.accumulated_miles -= self.ticket.flight.distance
+            user.ticked_count -= 1
+            user.save()
 
+        flight.save()
 
     def save(self, *args, **kwargs):
         # 验证乘客类型与机票类型是否匹配
-        if self.passenger.person_type != self.ticket.ticket_type:
+        if self.ticket.ticket_type != 'adult' and self.passenger.person_type != self.ticket.ticket_type:
             raise ValueError(
                 f"Ticket type '{self.ticket.ticket_type}' does not match passenger type '{self.passenger.person_type}'.")
 

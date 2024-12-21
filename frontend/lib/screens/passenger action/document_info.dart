@@ -78,7 +78,7 @@ class _PassengerDocumentsPageState extends State<PassengerDocumentsPage> {
             child: Scaffold(
               backgroundColor: Colors.teal.shade50,
               appBar: AppBar(
-                title: Text("证件管理"),
+                title: Text("证件管理", style: TextStyle(fontWeight: FontWeight.bold,color: Colors.white)),
                 centerTitle: true,
                 flexibleSpace: Container(
                   decoration: BoxDecoration(
@@ -112,7 +112,7 @@ class _PassengerDocumentsPageState extends State<PassengerDocumentsPage> {
                         ),
               floatingActionButton: FloatingActionButton.extended(
                 onPressed: () => _navigateToAddOrEditDocumentPage(),
-                label: Text("添加证件"),
+                label: Text("添加证件", style: TextStyle(fontWeight: FontWeight.bold,color: Colors.white)),
                 icon: Icon(Icons.add),
                 backgroundColor: Colors.teal,
               ),
@@ -405,7 +405,7 @@ class _AddOrEditDocumentPageState extends State<AddOrEditDocumentPage> {
         icon: Icon(Icons.save, color: Colors.white),
         label: Text(
           "保存证件",
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
         ),
         style: ElevatedButton.styleFrom(
           backgroundColor: Colors.teal.shade700,

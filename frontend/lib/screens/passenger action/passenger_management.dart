@@ -114,25 +114,12 @@ class _PassengerInfoPageState extends State<PassengerInfoPage> {
     }
   }
 
+  
   // 构建界面
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.teal.shade50,
-      // appBar: AppBar(
-      //   title: Text("乘机人管理"),
-      //   flexibleSpace: Container(
-      //     decoration: BoxDecoration(
-      //       gradient: LinearGradient(
-      //         colors: [Colors.teal.shade700, Colors.teal.shade300],
-      //         begin: Alignment.topLeft,
-      //         end: Alignment.bottomRight,
-      //       ),
-      //     ),
-      //   ),
-      //   centerTitle: true,
-      //   elevation: 0,
-      // ),
       body: _isLoading
           ? Center(child: CircularProgressIndicator(color: Colors.teal))
           : _passengerList.isEmpty
@@ -170,7 +157,7 @@ class _PassengerInfoPageState extends State<PassengerInfoPage> {
             icon: Icon(Icons.add, color: Colors.white),
             label: Text(
               "添加乘机人",
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold,color: Colors.white),
             ),
           ),
         ],
@@ -308,8 +295,12 @@ class _PassengerInfoPageState extends State<PassengerInfoPage> {
               _isEditing = !_isEditing;
             });
           },
+         
           style: ElevatedButton.styleFrom(
-            backgroundColor: _isEditing ? Colors.green : Colors.blueAccent,
+            backgroundColor:_isEditing ? Colors.green : Colors.blueAccent,
+            padding: EdgeInsets.symmetric(vertical: 14, horizontal: 20),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           ),
           child: Text(
             _isEditing ? "保存修改" : "编辑信息",
